@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>לוח שידורים · ערוצים 12 / 13</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0f14; --panel:#15181f; --panel-2:#1b1f29;
+    --ink:#eef1f6; --muted:#8b93a4; --line:#262b36;
+    --c12:#3fd6c0; --c13:#ff5a4d; --accent:#ffd166;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:
+      radial-gradient(900px 500px at 100% -10%, rgba(63,214,192,.08), transparent 60%),
+      radial-gradient(800px 500px at -10% 110%, rgba(255,90,77,.08), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Heebo",system-ui,sans-serif;
+    min-height:100vh;
+    line-height:1.5;
+  }
+  .wrap{max-width:920px;margin:0 auto;padding:28px 18px 80px}
+  header h1{
+    font-family:"Frank Ruhl Libre",serif;
+    font-weight:900;font-size:clamp(28px,6vw,46px);
+    margin:0 0 4px;letter-spacing:-.5px;
+  }
+  header p{color:var(--muted);margin:0 0 22px;font-weight:300}
+  header .bar{height:3px;width:120px;border-radius:3px;
+    background:linear-gradient(90deg,var(--c12),var(--c13));margin-bottom:24px}
+
+  .controls{
+    background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--radius);padding:16px;margin-bottom:22px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .tabs{display:flex;gap:8px}
+  .tab{
+    flex:1;cursor:pointer;border:1px solid var(--line);background:var(--panel-2);
+    color:var(--muted);padding:12px;border-radius:10px;text-align:center;
+    font-weight:600;font-size:15px;transition:.18s;user-select:none;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active[data-ch="keshet12"]{color:#04201c;background:var(--c12);border-color:var(--c12)}
+  .tab.active[data-ch="reshet13"]{color:#2a0a07;background:var(--c13);border-color:var(--c13)}
+
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .field{flex:1;min-width:200px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+  input,select{
+    width:100%;background:var(--panel-2);border:1px solid var(--line);
+    color:var(--ink);border-radius:9px;padding:10px 12px;font:inherit;font-size:14px;
+  }
+  input::placeholder{color:#5c6373}
+  button.go{
+    background:var(--accent);color:#221a00;border:none;border-radius:9px;
+    padding:11px 22px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;
+    transition:.15s;white-space:nowrap;
+  }
+  button.go:hover{filter:brightness(1.08)}
+  button.go:disabled{opacity:.5;cursor:default}
+
+  .note{font-size:12.5px;color:var(--muted);line-height:1.6}
+  .note b{color:var(--accent);font-weight:600}
+
+  #status{margin:18px 0;font-size:14px;color:var(--muted);min-height:20px}
+  #status.err{color:var(--c13)}
+
+  .day{margin:26px 0 8px}
+  .day h2{
+    font-family:"Frank Ruhl Libre",serif;font-weight:700;font-size:20px;margin:0;
+    display:flex;align-items:center;gap:10px;
+  }
+  .day h2::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
+
+  ul.list{list-style:none;margin:10px 0 0;padding:0;
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--panel)}
+  ul.list li{
+    display:flex;gap:14px;align-items:baseline;padding:12px 16px;
+    border-bottom:1px solid var(--line);transition:background .12s;
+  }
+  ul.list li:last-child{border-bottom:none}
+  ul.list li:hover{background:var(--panel-2)}
+  .time{font-variant-numeric:tabular-nums;font-weight:800;font-size:15px;
+    color:var(--accent);min-width:52px}
+  .title a{color:var(--ink);text-decoration:none}
+  .title a:hover{text-decoration:underline}
+  .title{font-size:15px}
+
+  footer{margin-top:40px;color:#5c6373;font-size:12px;text-align:center;line-height:1.7}
+  code{background:var(--panel-2);padding:1px 6px;border-radius:5px;font-size:12px;color:var(--c12)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>לוח שידורים</h1>
+    <p>ערוץ 12 (קשת) · ערוץ 13 (רשת) — משיכה חיה דרך פרוקסי CORS</p>
+    <div class="bar"></div>
+  </header>
+
+  <div class="controls">
+    <div class="tabs">
+      <div class="tab active" data-ch="reshet13">רשת 13</div>
+      <div class="tab" data-ch="keshet12">קשת 12</div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>פרוקסי CORS</label>
+        <select id="proxy">
+          <option value="https://api.allorigins.win/raw?url=">allorigins.win</option>
+          <option value="https://corsproxy.io/?url=">corsproxy.io</option>
+          <option value="">ללא פרוקסי (רק אם הרצת מקומית עם CORS כבוי)</option>
+        </select>
+      </div>
+      <button class="go" id="loadBtn">טען לוח</button>
+    </div>
+
+    <div class="field" id="makoField" style="display:none">
+      <label>endpoint של קשת 12 (ה-XHR שמצאת בכלי הצותת)</label>
+      <input id="makoUrl" placeholder="הדבק כאן את כתובת ה-JSON שמחזירה את הלוח של mako">
+    </div>
+
+    <p class="note" id="hint"></p>
+  </div>
+
+  <div id="status"></div>
+  <div id="output"></div>
+
+  <footer>
+    דף לקוח בלבד · אין API רשמי לערוצים · רשת 13 מרונדר בצד-שרת ולכן נמשך ומפורסר ישירות.<br>
+    קשת 12 טוען את הלוח דרך XHR — הרץ את סקריפט ה-Playwright כדי לאתר את ה-endpoint והדבק אותו למעלה.
+  </footer>
+</div>
+
+<script>
+const SOURCES = {
+  reshet13: "https://13tv.co.il/tv-guide/",
+  keshet12: "https://www.mako.co.il/tv-tv-schedule"
+};
+let channel = "reshet13";
+
+const $ = s => document.querySelector(s);
+const proxyEl = $("#proxy"), statusEl = $("#status"), outEl = $("#output");
+const makoField = $("#makoField"), hintEl = $("#hint");
+
+const HINTS = {
+  reshet13: "רשת 13 עובד מהקופסה — לחץ <b>טען לוח</b>. הלוח (כל השבוע) מחולץ ישירות מה-HTML.",
+  keshet12: "קשת 12 לא מחזיר את הלוח ב-HTML. הדבק <b>endpoint</b> שמצאת עם סקריפט ה-Playwright (שדה למטה), או נסה בכל זאת — לרוב יחזיר ריק."
+};
+
+document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+  t.classList.add("active");
+  channel = t.dataset.ch;
+  makoField.style.display = channel === "keshet12" ? "block" : "none";
+  hintEl.innerHTML = HINTS[channel];
+  outEl.innerHTML = ""; statusEl.textContent = ""; statusEl.className = "";
+});
+hintEl.innerHTML = HINTS[channel];
+
+function setStatus(msg, isErr){ statusEl.textContent = msg; statusEl.className = isErr ? "err" : ""; }
+
+async function fetchText(url){
+  const proxy = proxyEl.value;
+  const full = proxy ? proxy + encodeURIComponent(url) : url;
+  const res = await fetch(full);
+  if(!res.ok) throw new Error("HTTP " + res.status);
+  return res.text();
+}
+
+// חילוץ פריטי לוח מ-HTML של רשת 13. מקטלג לימים לפי איפוס שעה.
+function parseReshet(html){
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const items = [];
+  doc.querySelectorAll("a").forEach(a => {
+    const txt = a.textContent.trim().replace(/\s+/g, " ");
+    const m = txt.match(/^(\d{1,2}:\d{2})\s+(.+)/);
+    if(m){
+      const title = m[2].split(">>")[0].trim();
+      if(title) items.push({ time: m[1], title, link: a.getAttribute("href") });
+    }
+  });
+  // הסרת כפילויות עוקבות
+  const clean = items.filter((it,i) =>
+    i === 0 || it.time !== items[i-1].time || it.title !== items[i-1].title);
+  // קיבוץ לימים: כשהשעה "קופצת אחורה" מתחיל יום חדש
+  const days = []; let cur = null, prev = -1;
+  for(const it of clean){
+    const mins = (+it.time.split(":")[0]) * 60 + (+it.time.split(":")[1]);
+    if(!cur || mins < prev - 120){ cur = []; days.push(cur); }
+    cur.push(it); prev = mins;
+  }
+  return days;
+}
+
+function render(days){
+  if(!days.length){ setStatus("לא נמצאו פריטי לוח בתשובה.", true); return; }
+  const labels = ["היום","מחר","יום 3","יום 4","יום 5","יום 6","יום 7","יום 8"];
+  outEl.innerHTML = days.map((day, di) => `
+    <div class="day"><h2>${labels[di] || ("יום " + (di+1))}</h2></div>
+    <ul class="list">
+      ${day.map(it => `
+        <li>
+          <span class="time">${it.time}</span>
+          <span class="title">${it.link
+            ? `<a href="${it.link.startsWith("http") ? it.link : "https://13tv.co.il"+it.link}" target="_blank" rel="noopener">${esc(it.title)}</a>`
+            : esc(it.title)}</span>
+        </li>`).join("")}
+    </ul>`).join("");
+}
+
+function esc(s){ return s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+$("#loadBtn").onclick = async () => {
+  const btn = $("#loadBtn");
+  btn.disabled = true; outEl.innerHTML = "";
+  try {
+    if(channel === "reshet13"){
+      setStatus("מושך מ-13tv.co.il …");
+      const html = await fetchText(SOURCES.reshet13);
+      render(parseReshet(html));
+      setStatus("נטען ✓");
+    } else {
+      const ep = $("#makoUrl").value.trim();
+      if(!ep){ setStatus("הדבק endpoint של קשת 12 (או החלף לרשת 13).", true); btn.disabled=false; return; }
+      setStatus("מושך מ-mako …");
+      const raw = await fetchText(ep);
+      // ננסה JSON; אם לא — נציג גולמי כדי שתראה את המבנה ותתאים את הפרסר
+      try {
+        const data = JSON.parse(raw);
+        outEl.innerHTML = `<ul class="list"><li><span class="title">
+          התקבל JSON. התאם את הפרסר למבנה הזה:<br><br>
+          <code style="white-space:pre-wrap;display:block">${esc(JSON.stringify(data,null,2).slice(0,1500))}</code>
+          </span></li></ul>`;
+        setStatus("התקבל JSON ✓ — ראה מבנה למטה");
+      } catch {
+        outEl.innerHTML = `<ul class="list"><li><span class="title">
+          התשובה אינה JSON. ייתכן שזה לא ה-endpoint הנכון.<br><br>
+          <code style="white-space:pre-wrap;display:block">${esc(raw.slice(0,800))}</code>
+          </span></li></ul>`;
+        setStatus("התקבל תוכן לא-JSON", true);
+      }
+    }
+  } catch(e){
+    setStatus("שגיאה: " + e.message + " — נסה פרוקסי אחר מהרשימה.", true);
+  }
+  btn.disabled = false;
+};
+</script>
+</body>
+</html>

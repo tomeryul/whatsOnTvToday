@@ -203,7 +203,7 @@ function parseReshet(html){
 }
 
 function render(days){
-  if(!days.length){ setStatus("לא נמצאו פריטי לוח בתשובה.", true); return; }
+  if(!days.length){ setStatus("לא נמצאו פריטי לוח בתשובה — נסה פרוקסי אחר מהרשימה.", true); return false; }
   const labels = ["היום","מחר","יום 3","יום 4","יום 5","יום 6","יום 7","יום 8"];
   outEl.innerHTML = days.map((day, di) => `
     <div class="day"><h2>${labels[di] || ("יום " + (di+1))}</h2></div>
@@ -216,6 +216,7 @@ function render(days){
             : esc(it.title)}</span>
         </li>`).join("")}
     </ul>`).join("");
+  return true;
 }
 
 function esc(s){ return s.replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
@@ -227,8 +228,7 @@ $("#loadBtn").onclick = async () => {
     if(channel === "reshet13"){
       setStatus("מושך מ-13tv.co.il …");
       const html = await fetchText(SOURCES.reshet13);
-      render(parseReshet(html));
-      setStatus("נטען ✓");
+      if(render(parseReshet(html))) setStatus("נטען ✓");
     } else {
       const ep = $("#makoUrl").value.trim();
       if(!ep){ setStatus("הדבק endpoint של קשת 12 (או החלף לרשת 13).", true); btn.disabled=false; return; }

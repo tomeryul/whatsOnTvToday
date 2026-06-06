@@ -83,13 +83,16 @@
   ul.list{list-style:none;margin:10px 0 0;padding:0;
     border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--panel)}
   ul.list li{
-    display:flex;gap:14px;align-items:baseline;padding:12px 16px;
+    display:flex;gap:14px;align-items:center;padding:10px 16px;
     border-bottom:1px solid var(--line);transition:background .12s;
   }
   ul.list li:last-child{border-bottom:none}
   ul.list li:hover{background:var(--panel-2)}
   .time{font-variant-numeric:tabular-nums;font-weight:800;font-size:15px;
-    color:var(--accent);min-width:52px}
+    color:var(--accent);min-width:52px;align-self:flex-start;padding-top:4px}
+  .thumb{flex:0 0 auto;width:72px;height:46px;object-fit:cover;border-radius:8px;
+    background:var(--panel-2);border:1px solid var(--line)}
+  .thumb-empty{display:inline-block}
   .title a{color:var(--ink);text-decoration:none}
   .title a:hover{text-decoration:underline}
   .title{font-size:15px}
@@ -192,7 +195,12 @@ function parseReshet(html){
         (grid.broadcastWeek || []).forEach(day => {
           const items = (day.shows || [])
             .filter(s => s.start_time && s.title && !s.isBlank)
-            .map(s => ({ time: s.start_time, title: String(s.title).trim(), link: s.link || null }));
+            .map(s => ({
+              time: s.start_time,
+              title: String(s.title).trim(),
+              link: s.link || null,
+              img: s.image || (s.imageObj && s.imageObj.d) || null
+            }));
           if(items.length){
             const label = [day.weekday, day.shortDate].filter(Boolean).join(" · ");
             days.push({ label, items });
@@ -253,7 +261,12 @@ function parseMako(raw){
       cur = { label, items: [] }; days.push(cur);
     }
     const url = (p.MakoTVURL || "").trim();
-    cur.items.push({ time, title, link: url.startsWith("http") ? url : null });
+    const pic = (p.Picture || "").trim();
+    cur.items.push({
+      time, title,
+      link: url.startsWith("http") ? url : null,
+      img: pic && !/placeholder/i.test(pic) ? pic : null
+    });
   });
   return days;
 }
@@ -271,6 +284,9 @@ function render(days){
       ${items.map(it => `
         <li>
           <span class="time">${it.time}</span>
+          ${it.img
+            ? `<img class="thumb" src="${esc(it.img)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
+            : `<span class="thumb thumb-empty"></span>`}
           <span class="title">${it.link
             ? `<a href="${it.link.startsWith("http") ? it.link : "https://13tv.co.il"+it.link}" target="_blank" rel="noopener">${esc(it.title)}</a>`
             : esc(it.title)}</span>

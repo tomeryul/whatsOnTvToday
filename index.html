@@ -116,8 +116,8 @@
       <div class="field">
         <label>פרוקסי CORS</label>
         <select id="proxy">
-          <option value="https://api.allorigins.win/raw?url=">allorigins.win</option>
-          <option value="https://corsproxy.io/?url=">corsproxy.io</option>
+          <option value="https://api.allorigins.win/raw?url=">allorigins.win (מומלץ)</option>
+          <option value="https://corsproxy.io/?url=">corsproxy.io (לרוב לא עובד ל-13tv)</option>
           <option value="">ללא פרוקסי (רק אם הרצת מקומית עם CORS כבוי)</option>
         </select>
       </div>
@@ -177,8 +177,34 @@ async function fetchText(url){
   return res.text();
 }
 
-// חילוץ פריטי לוח מ-HTML של רשת 13. מקטלג לימים לפי איפוס שעה.
+// חילוץ פריטי לוח מ-13tv. המבנה הנוכחי הוא אפליקציית Next.js — הלוח (כל השבוע)
+// יושב כ-JSON בתוך תגית <script id="__NEXT_DATA__">. נפרסר אותו ישירות.
 function parseReshet(html){
+  const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
+  if(m){
+    try {
+      const data = JSON.parse(m[1]);
+      const grids = data?.props?.pageProps?.page?.Content?.PageGrid || [];
+      const days = [];
+      grids.forEach(grid => {
+        (grid.broadcastWeek || []).forEach(day => {
+          const items = (day.shows || [])
+            .filter(s => s.start_time && s.title && !s.isBlank)
+            .map(s => ({ time: s.start_time, title: String(s.title).trim(), link: s.link || null }));
+          if(items.length){
+            const label = [day.weekday, day.shortDate].filter(Boolean).join(" · ");
+            days.push({ label, items });
+          }
+        });
+      });
+      if(days.length) return days;
+    } catch(e){ /* אם המבנה השתנה — ניפול לפרסר ה-HTML הישן */ }
+  }
+  return parseReshetLegacy(html);
+}
+
+// פרסר HTML ישן — גיבוי למקרה שמבנה ה-JSON ישתנה שוב. מקטלג לימים לפי איפוס שעה.
+function parseReshetLegacy(html){
   const doc = new DOMParser().parseFromString(html, "text/html");
   const items = [];
   doc.querySelectorAll("a").forEach(a => {
@@ -203,19 +229,24 @@ function parseReshet(html){
 }
 
 function render(days){
-  if(!days.length){ setStatus("לא נמצאו פריטי לוח בתשובה — נסה פרוקסי אחר מהרשימה.", true); return false; }
-  const labels = ["היום","מחר","יום 3","יום 4","יום 5","יום 6","יום 7","יום 8"];
-  outEl.innerHTML = days.map((day, di) => `
-    <div class="day"><h2>${labels[di] || ("יום " + (di+1))}</h2></div>
+  if(!days.length){ setStatus("לא נמצאו פריטי לוח בתשובה — נסה פרוקסי אחר מהרשימה (allorigins.win).", true); return false; }
+  const fallbackLabels = ["היום","מחר","יום 3","יום 4","יום 5","יום 6","יום 7","יום 8"];
+  outEl.innerHTML = days.map((day, di) => {
+    // תמיכה בשני המבנים: {label, items} מהפרסר החדש, או מערך פריטים מהפרסר הישן
+    const items = Array.isArray(day) ? day : day.items;
+    const label = (!Array.isArray(day) && day.label) || fallbackLabels[di] || ("יום " + (di+1));
+    return `
+    <div class="day"><h2>${esc(label)}</h2></div>
     <ul class="list">
-      ${day.map(it => `
+      ${items.map(it => `
         <li>
           <span class="time">${it.time}</span>
           <span class="title">${it.link
             ? `<a href="${it.link.startsWith("http") ? it.link : "https://13tv.co.il"+it.link}" target="_blank" rel="noopener">${esc(it.title)}</a>`
             : esc(it.title)}</span>
         </li>`).join("")}
-    </ul>`).join("");
+    </ul>`;
+  }).join("");
   return true;
 }
 

@@ -26,8 +26,15 @@
   .chip-toggle.on{color:#fff;background:#2a2a2a;border-color:#444}
   .chip-toggle.off{opacity:.45}
   .spacer{flex:1}
-  .who{color:var(--muted);font-size:12px;white-space:nowrap;cursor:pointer}
+  .who{color:var(--muted);font-size:12px;white-space:nowrap;display:flex;align-items:center;gap:7px}
   .who b{color:#fff}
+  .who .lnk{cursor:pointer;text-decoration:underline}
+  .who .lnk:hover{color:#fff}
+  .avatar{width:24px;height:24px;border-radius:50%;object-fit:cover}
+  .gbtn{display:inline-flex;align-items:center;gap:7px;background:#fff;color:#1a1a1a;border:none;border-radius:8px;
+    padding:7px 14px;font-weight:800;font-size:13px;cursor:pointer}
+  .gbtn:hover{filter:brightness(.93)}
+  .gbtn .g{color:#4285F4;font-weight:900;font-size:15px}
   .updated{color:#777;font-size:12px;white-space:nowrap}
   .icon-btn{background:rgba(255,255,255,.1);border:none;color:#fff;cursor:pointer;width:38px;height:38px;
     border-radius:50%;font-size:18px;transition:.15s}
@@ -409,7 +416,7 @@ setInterval(() => { if(allPrograms.length) renderView(); }, 60000);
    SOCIAL — Firebase (משתמשים אנונימיים, כינוי, לייקים, תגובות)
    ============================================================ */
 const SOCIAL = !!(firebaseConfig && firebaseConfig.apiKey);
-let db = null, uid = null, FS = null;
+let db = null, uid = null, FS = null, AUTH = null, auth = null, currentUser = null;
 let likesMap = new Map();          // key -> {likes, comments, ...}
 let topList = [];                  // series sorted by likes desc
 let likedSet = new Set(JSON.parse(localStorage.getItem("likedKeys") || "[]"));
@@ -421,8 +428,15 @@ function saveLiked(){ localStorage.setItem("likedKeys", JSON.stringify([...liked
 function updateWho(){
   const el = $("#who");
   if(!SOCIAL){ el.textContent = ""; return; }
-  el.innerHTML = nickname ? `מחובר/ת כ־<b>${esc(nickname)}</b>` : "בחר/י כינוי";
-  el.onclick = () => askNickname(true);
+  if(currentUser){
+    const name = esc(nickname || currentUser.displayName || "משתמש");
+    el.innerHTML = `${currentUser.photoURL ? `<img class="avatar" src="${esc(currentUser.photoURL)}" alt="">` : ""}<b>${name}</b> · <u class="lnk" id="renameBtn">שם</u> · <u class="lnk" id="logoutBtn">יציאה</u>`;
+    $("#renameBtn").onclick = () => askNickname(true);
+    $("#logoutBtn").onclick = () => signOutUser();
+  } else {
+    el.innerHTML = `<button class="gbtn" id="gLogin"><span class="g">G</span> התחבר עם Google</button>`;
+    $("#gLogin").onclick = () => signInGoogle();
+  }
 }
 
 /* nickname dialog */
@@ -444,12 +458,28 @@ function closeNick(saved){
 $("#nickSave").onclick = () => {
   const v = $("#nickInput").value.trim().slice(0,24);
   if(!v) return;
-  nickname = v; localStorage.setItem("nickname", v); updateWho(); closeNick(true);
+  nickname = v; localStorage.setItem("nickname", v); updateWho(); updateCAs(); closeNick(true);
 };
 $("#nickCancel").onclick = () => closeNick(false);
 $("#nickInput").addEventListener("keydown", e => { if(e.key === "Enter") $("#nickSave").click(); });
 
-async function ensureNick(){ return nickname || await askNickname(true); }
+async function signInGoogle(){
+  if(!auth || !AUTH) return false;
+  const provider = new AUTH.GoogleAuthProvider();
+  try {
+    await AUTH.signInWithPopup(auth, provider);
+    uid = auth.currentUser && auth.currentUser.uid;
+    return true;
+  } catch(e){
+    // במובייל/חוסם-חלונות — נופלים להפניה (redirect)
+    if(["auth/popup-blocked","auth/cancelled-popup-request","auth/popup-closed-by-user","auth/operation-not-supported-in-this-environment"].includes(e.code)){
+      try { await AUTH.signInWithRedirect(auth, provider); } catch(_){}
+    } else { console.warn("signIn:", e); alert("ההתחברות נכשלה: " + (e.code || e.message)); }
+    return false;
+  }
+}
+function signOutUser(){ if(auth && AUTH) AUTH.signOut(auth); }
+async function ensureSignedIn(){ return currentUser ? true : await signInGoogle(); }
 
 async function initSocial(){
   if(!SOCIAL){ updateWho(); return; }
@@ -460,14 +490,16 @@ async function initSocial(){
       import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"),
       import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js")
     ]);
-    FS = fs;
+    FS = fs; AUTH = authMod;
     const app = appMod.initializeApp(firebaseConfig);
-    const auth = authMod.getAuth(app);
+    auth = authMod.getAuth(app);
     db = fs.getFirestore(app);
-    await new Promise((res, rej) => {
-      authMod.onAuthStateChanged(auth, u => { if(u){ uid = u.uid; res(); } });
-      authMod.signInAnonymously(auth).catch(rej);
+    authMod.onAuthStateChanged(auth, u => {
+      currentUser = u; uid = u ? u.uid : null;
+      if(u && !nickname){ nickname = u.displayName || "משתמש"; localStorage.setItem("nickname", nickname); }
+      updateWho(); updateCAs();
     });
+    try { await authMod.getRedirectResult(auth); } catch(e){ console.warn("redirect:", e); }
     await loadAggregates();
   } catch(e){
     console.warn("Social init failed:", e);
@@ -496,8 +528,10 @@ function metaFor(key){
 }
 
 async function toggleLike(key){
-  if(!db || !uid) return;
-  if(!await ensureNick()) return;
+  if(!db) return;
+  if(!await ensureSignedIn()) return;
+  uid = auth.currentUser && auth.currentUser.uid;
+  if(!uid) return;
   const { doc, collection, writeBatch, increment, serverTimestamp } = FS;
   const liked = likedSet.has(key);
   const m = metaFor(key);
@@ -584,13 +618,20 @@ function renderComments(){
 }
 function updateCAs(){
   const as = $("#cAs"); if(!as) return;
-  as.innerHTML = nickname ? `כותב/ת בתור <b>${esc(nickname)}</b> · <u>שנה</u>` : `<u>בחר/י כינוי</u>`;
-  as.querySelector("u")?.addEventListener("click", async () => { await askNickname(true); updateCAs(); });
+  if(currentUser){
+    as.innerHTML = `כותב/ת בתור <b>${esc(nickname || currentUser.displayName || "משתמש")}</b> · <u>שנה</u>`;
+    as.querySelector("u")?.addEventListener("click", async () => { await askNickname(true); updateCAs(); });
+  } else {
+    as.innerHTML = `<u>התחבר/י עם Google כדי להגיב</u>`;
+    as.querySelector("u")?.addEventListener("click", () => signInGoogle());
+  }
 }
 async function sendComment(key){
   const ta = $("#cText"); const text = ta.value.trim();
   if(!text) return;
-  if(!await ensureNick()){ return; }
+  if(!await ensureSignedIn()){ return; }
+  uid = auth.currentUser && auth.currentUser.uid;
+  if(!uid) return;
   updateCAs();
   const btn = $("#cSend"); btn.disabled = true;
   try {

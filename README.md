@@ -49,11 +49,12 @@ node scripts/fetch-schedules.mjs   # דורש Node 18+ (fetch מובנה); לל�
 ### הקמה (פעם אחת)
 
 1. צור פרויקט ב-https://console.firebase.google.com (חינם).
-2. **Build → Authentication → Get started → Anonymous → Enable**.
-3. **Build → Firestore Database → Create database** (Production mode).
-4. **Project settings ⚙ → Your apps → Web (`</>`)** → רשום אפליקציה והעתק את
+2. **Build → Authentication → Sign-in method → Google → Enable**.
+3. **Authentication → Settings → Authorized domains** → הוסף את דומיין ה-Pages (למשל `tomeryul.github.io`).
+4. **Build → Firestore Database → Create database** (Production mode).
+5. **Project settings ⚙ → Your apps → Web (`</>`)** → רשום אפליקציה והעתק את
    ערכי `firebaseConfig` לקובץ `firebase-config.js` בריפו.
-5. **Firestore → Rules** → הדבק את החוקים הבאים ופרסם:
+6. **Firestore → Rules** → הדבק את החוקים הבאים ופרסם:
 
 ```
 rules_version = '2';
@@ -79,5 +80,6 @@ service cloud.firestore {
 }
 ```
 
-הזהות מבוססת על התחברות **אנונימית** (כל דפדפן = משתמש), והשם המוצג הוא **כינוי**
-שהמשתמש בוחר. המפתחות ב-`firebase-config.js` פומביים מטבעם — האבטחה דרך החוקים למעלה.
+הזהות מבוססת על התחברות **Google**. שם התצוגה כברירת מחדל הוא השם מחשבון Google,
+וניתן לשנותו לכינוי מותאם (נשמר מקומית). המפתחות ב-`firebase-config.js` פומביים
+מטבעם — האבטחה נעשית דרך חוקי Firestore למעלה.

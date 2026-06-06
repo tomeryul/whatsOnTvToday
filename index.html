@@ -213,7 +213,7 @@ const CH = {
 const ORDER = ["reshet13","keshet12","kan11"];
 const HOUR = 3600e3, WINDOW = 24*HOUR, DEFAULT_LEN = 90*60e3;
 
-let allPrograms = [], windowed = [];
+let allPrograms = [], windowed = [], primeList = [];
 const active = new Set(ORDER);
 let currentModal = null;        // {key,title,ch,img,desc,start,end,link}
 
@@ -326,6 +326,26 @@ function topCard(s){
   </div>`;
 }
 
+// יעד "פריים טיים" — ה-21:40 הקרוב (היום אם עוד לא עבר, אחרת מחר)
+const PRIME_H = 21, PRIME_M = 40;
+function nextPrimeTarget(){
+  const now = new Date();
+  const t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), PRIME_H, PRIME_M, 0, 0);
+  if(now.getTime() >= t.getTime()) t.setDate(t.getDate() + 1);
+  return t.getTime();
+}
+function primeCard(p, idx, prefix){
+  return `<div class="pcard" data-prime="${idx}">
+    ${p.img ? `<img class="pthumb" src="${esc(p.img)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : `<span class="pthumb"></span>`}
+    <div class="pinfo">
+      <div class="prow">${chip(p.ch)}<span class="ptime"><span class="day">${prefix}</span>21:40</span></div>
+      <div class="ptitle">${esc(p.title)}</div>
+      ${p.desc ? `<div class="pdesc">${esc(p.desc)}</div>` : ""}
+      ${likeMetaHtml(p.key)}
+    </div>
+  </div>`;
+}
+
 function renderView(){
   const now = Date.now(), horizon = now + WINDOW;
   windowed = allPrograms.filter(p => active.has(p.ch) && p.end > now && p.start <= horizon)
@@ -337,10 +357,21 @@ function renderView(){
   const live = [], upcoming = [];
   windowed.forEach((p, idx) => (p.start <= now ? live : upcoming).push(idx));
 
+  // מה בערב — איזו תוכנית משודרת בכל ערוץ ב-21:40 הקרוב
+  const target = nextPrimeTarget();
+  const primePrefix = new Date(target).toDateString() === new Date().toDateString() ? "היום " : "מחר ";
+  primeList = ORDER.filter(id => active.has(id))
+    .map(id => allPrograms.find(p => p.ch === id && p.start <= target && p.end > target))
+    .filter(Boolean);
+
   let html = "";
   if(live.length){
     html += `<div class="section"><h2><span class="live-dot"></span>עכשיו בשידור</h2>
       <div class="grid">${live.map(i=>pcard(windowed[i],i)).join("")}</div></div>`;
+  }
+  if(primeList.length){
+    html += `<div class="section"><h2>🌙 מה בערב <span class="sub">· ${primePrefix.trim()} 21:40</span></h2>
+      <div class="grid">${primeList.map((p,i)=>primeCard(p,i,primePrefix)).join("")}</div></div>`;
   }
   if(SOCIAL && topList.length){
     html += `<div class="section"><h2><span class="star">★</span>הכי אהובים <span class="sub">· לפי המשתמשים</span></h2>
@@ -360,6 +391,9 @@ outEl.addEventListener("click", e => {
   const top = e.target.closest("[data-top]");
   if(top){ const s = topList.find(x=>x.key===top.dataset.top);
     if(s) openModal({ key:s.key, title:s.title, ch:s.channel, img:s.img, desc:"", start:null, end:null, link:null }); return; }
+  const prime = e.target.closest("[data-prime]");
+  if(prime){ const p = primeList[+prime.dataset.prime];
+    if(p) openModal({ key:p.key, title:p.title, ch:p.ch, img:p.img, desc:p.desc, start:p.start, end:p.end, link:p.link }); return; }
   const card = e.target.closest(".pcard[data-idx]");
   if(card){ const p = windowed[+card.dataset.idx];
     openModal({ key:p.key, title:p.title, ch:p.ch, img:p.img, desc:p.desc, start:p.start, end:p.end, link:p.link }); }

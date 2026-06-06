@@ -29,15 +29,11 @@
     padding:14px 4vw;
     background:linear-gradient(180deg,#141414 10%,rgba(20,20,20,.7) 70%,transparent);
   }
-  .brand{
-    color:var(--red);font-weight:900;font-size:24px;letter-spacing:-.5px;
-    white-space:nowrap;
-  }
+  .brand{color:var(--red);font-weight:900;font-size:24px;letter-spacing:-.5px;white-space:nowrap}
   .tabs{display:flex;gap:6px}
   .tab{
     padding:7px 16px;border-radius:6px;cursor:pointer;
-    color:var(--muted);font-weight:700;font-size:15px;
-    transition:.15s;user-select:none;
+    color:var(--muted);font-weight:700;font-size:15px;transition:.15s;user-select:none;
   }
   .tab:hover{color:#fff}
   .tab.active[data-ch="keshet12"]{color:#fff;background:rgba(63,214,192,.18)}
@@ -63,10 +59,7 @@
   #status.err{color:#ff6b6b}
 
   /* ===== hero ===== */
-  .hero{
-    position:relative;width:100%;height:58vh;min-height:340px;max-height:620px;
-    overflow:hidden;margin-bottom:8px;
-  }
+  .hero{position:relative;width:100%;height:58vh;min-height:340px;max-height:620px;overflow:hidden;margin-bottom:8px}
   .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%}
   .hero .scrim{
     position:absolute;inset:0;
@@ -76,13 +69,11 @@
   }
   .hero .content{position:absolute;bottom:9%;right:4vw;left:4vw;max-width:620px}
   .hero .badge{
-    display:inline-flex;align-items:center;gap:7px;
-    color:#fff;font-weight:700;font-size:13px;letter-spacing:.5px;
-    background:rgba(229,9,20,.92);padding:5px 12px;border-radius:4px;margin-bottom:14px;
+    display:inline-flex;align-items:center;gap:7px;color:#fff;font-weight:700;font-size:13px;
+    letter-spacing:.5px;background:rgba(229,9,20,.92);padding:5px 12px;border-radius:4px;margin-bottom:14px;
   }
   .hero .badge.upnext{background:rgba(255,255,255,.18)}
-  .hero .dot{width:8px;height:8px;border-radius:50%;background:#fff;
-    box-shadow:0 0 0 0 rgba(255,255,255,.7);animation:pulse 1.6s infinite}
+  .dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite}
   @keyframes pulse{
     0%{box-shadow:0 0 0 0 rgba(255,255,255,.6)}
     70%{box-shadow:0 0 0 7px rgba(255,255,255,0)}
@@ -91,10 +82,15 @@
   .hero h1{font-size:clamp(30px,5.5vw,58px);font-weight:900;margin:0 0 10px;line-height:1.05}
   .hero .meta{color:#e5e5e5;font-size:clamp(14px,2vw,18px);font-weight:600}
   .hero .meta b{color:var(--red)}
+  .hero .hbtn{
+    display:inline-block;margin-top:16px;background:var(--red);color:#fff;font-weight:800;
+    font-size:15px;padding:10px 22px;border:none;border-radius:6px;cursor:pointer;
+  }
+  .hero .hbtn:hover{filter:brightness(1.1)}
 
   /* ===== rows / rails ===== */
   #output{padding-bottom:50px}
-  .row{margin:22px 0}
+  .row{margin:22px 0;position:relative}
   .row h2{font-size:clamp(17px,2.4vw,22px);font-weight:700;margin:0 0 10px;padding:0 4vw}
   .rail{
     display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;
@@ -105,16 +101,63 @@
   .rail::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:8px}
   .rail::-webkit-scrollbar-track{background:transparent}
   .card{
-    flex:0 0 auto;width:230px;scroll-snap-align:start;cursor:pointer;
+    flex:0 0 auto;width:230px;scroll-snap-align:start;cursor:pointer;position:relative;
     background:var(--card);border-radius:6px;overflow:hidden;
     transition:transform .25s ease, box-shadow .25s ease;
   }
-  .card:hover{transform:scale(1.07);box-shadow:0 10px 30px rgba(0,0,0,.6);z-index:2;position:relative}
+  .card:hover{transform:scale(1.07);box-shadow:0 10px 30px rgba(0,0,0,.6);z-index:2}
+  .card.live{outline:2px solid var(--red)}
   .card .thumb{width:100%;height:130px;object-fit:cover;display:block;background:#222}
+  .card .nowbadge{
+    position:absolute;top:7px;right:7px;background:var(--red);color:#fff;
+    font-size:11px;font-weight:800;padding:2px 8px;border-radius:4px;
+    display:flex;align-items:center;gap:5px;
+  }
   .card .info{padding:9px 11px 11px}
   .card .ctime{color:var(--red);font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;margin-bottom:3px}
   .card .ctitle{font-size:13.5px;font-weight:600;line-height:1.3;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  /* ===== rail arrows ===== */
+  .rail-arrow{
+    position:absolute;top:40px;bottom:24px;width:46px;border:none;cursor:pointer;
+    background:rgba(20,20,20,.55);color:#fff;font-size:26px;font-weight:700;z-index:5;
+    opacity:0;transition:opacity .2s;
+  }
+  .row:hover .rail-arrow{opacity:1}
+  .rail-arrow.start{right:0;border-radius:6px 0 0 6px}
+  .rail-arrow.end{left:0;border-radius:0 6px 6px 0}
+  .rail-arrow:hover{background:rgba(20,20,20,.85)}
+  @media (hover:none){.rail-arrow{display:none}}
+
+  /* ===== modal ===== */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;
+    align-items:center;justify-content:center;z-index:100;padding:20px;
+  }
+  .modal-overlay.open{display:flex}
+  .modal{
+    background:#181818;border-radius:10px;max-width:560px;width:100%;max-height:90vh;
+    overflow:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.7);
+    animation:pop .2s ease;
+  }
+  @keyframes pop{from{transform:scale(.94);opacity:.4}to{transform:scale(1);opacity:1}}
+  .modal .mimg{width:100%;height:280px;object-fit:cover;display:block;background:#222;border-radius:10px 10px 0 0}
+  .modal .mclose{
+    position:absolute;top:12px;left:12px;width:38px;height:38px;border-radius:50%;
+    background:rgba(0,0,0,.65);color:#fff;border:none;font-size:20px;cursor:pointer;line-height:1;
+  }
+  .modal .mclose:hover{background:#000}
+  .modal .mbody{padding:20px 26px 28px}
+  .modal h2{margin:0 0 8px;font-size:26px;font-weight:900;line-height:1.1}
+  .modal .mmeta{color:var(--muted);font-weight:600;margin-bottom:16px;font-size:15px}
+  .modal .mmeta b{color:var(--red)}
+  .modal .mdesc{color:#dcdcdc;font-size:15px;line-height:1.65;white-space:pre-wrap}
+  .modal .mlink{
+    display:inline-block;margin-top:20px;background:var(--red);color:#fff;font-weight:800;
+    padding:11px 22px;border-radius:6px;
+  }
+  .modal .mlink:hover{filter:brightness(1.1)}
 
   footer{margin-top:30px;color:#777;font-size:12px;text-align:center;line-height:1.7;padding:0 18px 30px}
 </style>
@@ -143,6 +186,20 @@
     דף לקוח בלבד · אין API רשמי לערוצים · רשת 13 נמשך מה-JSON המוטמע · קשת 12 מ-endpoint ה-EPG של mako.
   </footer>
 
+  <!-- modal -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <button class="mclose" id="modalClose" title="סגור">&times;</button>
+      <img class="mimg" id="modalImg" alt="" onerror="this.style.display='none'">
+      <div class="mbody">
+        <h2 id="modalTitle"></h2>
+        <div class="mmeta" id="modalMeta"></div>
+        <div class="mdesc" id="modalDesc"></div>
+        <a class="mlink" id="modalLink" target="_blank" rel="noopener" style="display:none">עבור לעמוד התוכנית ↗</a>
+      </div>
+    </div>
+  </div>
+
 <script>
 const SOURCES = {
   reshet13: "https://13tv.co.il/tv-guide/",
@@ -150,6 +207,7 @@ const SOURCES = {
 };
 const CHANNEL_NAMES = { reshet13: "רשת 13", keshet12: "קשת 12" };
 let channel = "reshet13";
+let currentDays = [];   // הלוח שנטען כרגע — לשימוש המודאל
 
 const $ = s => document.querySelector(s);
 const proxyEl = $("#proxy"), statusEl = $("#status"), outEl = $("#output");
@@ -185,7 +243,8 @@ function parseReshet(html){
               time: s.start_time,
               title: String(s.title).trim(),
               link: s.link || null,
-              img: s.image || (s.imageObj && s.imageObj.d) || null
+              img: s.image || (s.imageObj && s.imageObj.d) || null,
+              desc: (s.desc || "").trim()
             }));
           if(items.length){
             const label = [day.weekday, day.shortDate].filter(Boolean).join(" · ");
@@ -208,7 +267,7 @@ function parseReshetLegacy(html){
     const m = txt.match(/^(\d{1,2}:\d{2})\s+(.+)/);
     if(m){
       const title = m[2].split(">>")[0].trim();
-      if(title) items.push({ time: m[1], title, link: a.getAttribute("href"), img: null });
+      if(title) items.push({ time: m[1], title, link: a.getAttribute("href"), img: null, desc: "" });
     }
   });
   const clean = items.filter((it,i) =>
@@ -222,7 +281,7 @@ function parseReshetLegacy(html){
   return days;
 }
 
-// קשת 12 — mako EPG: programs[] עם DisplayStartTime / ProgramName / Date / Picture.
+// קשת 12 — mako EPG: programs[] עם DisplayStartTime / ProgramName / Date / Picture / EventDescription.
 function parseMako(raw){
   const data = typeof raw === "string" ? JSON.parse(raw) : raw;
   const progs = data.programs || [];
@@ -247,7 +306,8 @@ function parseMako(raw){
     cur.items.push({
       time, title,
       link: url.startsWith("http") ? url : null,
-      img: pic && !/placeholder/i.test(pic) ? pic : null
+      img: pic && !/placeholder/i.test(pic) ? pic : null,
+      desc: (p.EventDescription || "").trim()
     });
   });
   return days;
@@ -258,17 +318,14 @@ function parseMako(raw){
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 const toMin = t => { const a = t.split(":"); return (+a[0])*60 + (+a[1]); };
 
-// בוחר את התוכנית "עכשיו בשידור" מהיום הראשון (לפי השעה הנוכחית).
-function pickHero(day){
+// מאתר את אינדקס התוכנית המשודרת "עכשיו" בתוך יום (לפי השעה הנוכחית).
+function liveIndex(day){
   const items = day && (Array.isArray(day) ? day : day.items);
-  if(!items || !items.length) return null;
+  if(!items || !items.length) return { idx: 0, live: false };
   const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
   let idx = 0, live = false;
   for(let i=0;i<items.length;i++){ if(toMin(items[i].time) <= nowMin){ idx = i; live = true; } }
-  let hero = Object.assign({}, items[idx]);
-  if(!hero.img){ const w = items.find(it => it.img); if(w) hero.img = w.img; }
-  hero._live = live;
-  return hero;
+  return { idx, live };
 }
 
 function buildLink(it){
@@ -276,11 +333,9 @@ function buildLink(it){
   return it.link.startsWith("http") ? it.link : "https://13tv.co.il" + it.link;
 }
 
-function card(it){
-  const href = buildLink(it);
-  const tag = href ? "a" : "div";
-  const attrs = href ? ` href="${href}" target="_blank" rel="noopener"` : "";
-  return `<${tag} class="card"${attrs}>
+function card(it, di, ii, isLive){
+  return `<div class="card${isLive ? " live" : ""}" data-d="${di}" data-i="${ii}">
+    ${isLive ? `<span class="nowbadge"><span class="dot"></span>עכשיו</span>` : ""}
     ${it.img
       ? `<img class="thumb" src="${esc(it.img)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
       : `<span class="thumb"></span>`}
@@ -288,39 +343,87 @@ function card(it){
       <div class="ctime">${esc(it.time)}</div>
       <div class="ctitle">${esc(it.title)}</div>
     </div>
-  </${tag}>`;
+  </div>`;
 }
 
 function render(days){
+  currentDays = days;
   if(!days.length){ setStatus("לא נמצאו פריטי לוח — נסה פרוקסי אחר מהרשימה (allorigins.win).", true); return false; }
   const fallbackLabels = ["היום","מחר","יום 3","יום 4","יום 5","יום 6","יום 7","יום 8"];
 
-  const hero = pickHero(days[0]);
-  const heroHtml = hero ? `
+  const todayLive = liveIndex(days[0]);
+  const hero = Object.assign({}, days[0].items[todayLive.idx]);
+  if(!hero.img){ const w = days[0].items.find(it => it.img); if(w) hero.img = w.img; }
+
+  const heroHtml = `
     <div class="hero">
       ${hero.img ? `<img src="${esc(hero.img)}" alt="" onerror="this.style.display='none'">` : ""}
       <div class="scrim"></div>
       <div class="content">
-        <div class="badge ${hero._live ? "" : "upnext"}">
-          ${hero._live ? `<span class="dot"></span> עכשיו בשידור` : esc((days[0].label || "הלוח"))}
+        <div class="badge ${todayLive.live ? "" : "upnext"}">
+          ${todayLive.live ? `<span class="dot"></span> עכשיו בשידור` : esc((days[0].label || "הלוח"))}
         </div>
         <h1>${esc(hero.title)}</h1>
         <div class="meta"><b>${esc(hero.time)}</b> · ${esc(CHANNEL_NAMES[channel] || "")}</div>
+        <button class="hbtn" data-d="0" data-i="${todayLive.idx}">פרטים ›</button>
       </div>
-    </div>` : "";
+    </div>`;
 
   const rowsHtml = days.map((day, di) => {
     const items = Array.isArray(day) ? day : day.items;
     const label = (!Array.isArray(day) && day.label) || fallbackLabels[di] || ("יום " + (di+1));
+    const liveIdx = di === 0 && todayLive.live ? todayLive.idx : -1;
     return `<section class="row">
       <h2>${esc(label)}</h2>
-      <div class="rail">${items.map(card).join("")}</div>
+      <button class="rail-arrow start" data-dir="1" aria-label="הקודם">&#8250;</button>
+      <button class="rail-arrow end" data-dir="-1" aria-label="הבא">&#8249;</button>
+      <div class="rail">${items.map((it, ii) => card(it, di, ii, ii === liveIdx)).join("")}</div>
     </section>`;
   }).join("");
 
   outEl.innerHTML = heroHtml + rowsHtml;
+
+  // גלילה אוטומטית אל התוכנית המשודרת עכשיו (ביום הראשון)
+  if(todayLive.live){
+    const liveCard = outEl.querySelector('.card.live');
+    if(liveCard) liveCard.scrollIntoView({ inline: "center", block: "nearest" });
+  }
   return true;
 }
+
+/* ============ MODAL ============ */
+
+function openModal(di, ii){
+  const day = currentDays[di]; if(!day) return;
+  const items = Array.isArray(day) ? day : day.items;
+  const it = items[ii]; if(!it) return;
+  const dayLabel = (!Array.isArray(day) && day.label) || "";
+  $("#modalTitle").textContent = it.title;
+  $("#modalMeta").innerHTML = `<b>${esc(it.time)}</b> · ${esc(dayLabel)} · ${esc(CHANNEL_NAMES[channel] || "")}`;
+  $("#modalDesc").textContent = it.desc || "אין תיאור זמין לתוכנית זו.";
+  const img = $("#modalImg");
+  if(it.img){ img.src = it.img; img.style.display = ""; } else { img.removeAttribute("src"); img.style.display = "none"; }
+  const link = $("#modalLink"), href = buildLink(it);
+  if(href){ link.href = href; link.style.display = ""; } else { link.style.display = "none"; }
+  $("#modal").classList.add("open");
+}
+function closeModal(){ $("#modal").classList.remove("open"); }
+
+$("#modalClose").onclick = closeModal;
+$("#modal").onclick = e => { if(e.target.id === "modal") closeModal(); };
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+
+// האזנה מרכזית ללחיצות בתוך הלוח: כרטיס/כפתור-פרטים → מודאל, חיצים → גלילה
+outEl.addEventListener("click", e => {
+  const arrow = e.target.closest(".rail-arrow");
+  if(arrow){
+    const rail = arrow.closest(".row").querySelector(".rail");
+    rail.scrollBy({ left: (+arrow.dataset.dir) * rail.clientWidth * 0.85, behavior: "smooth" });
+    return;
+  }
+  const trigger = e.target.closest(".card, .hbtn");
+  if(trigger){ openModal(+trigger.dataset.d, +trigger.dataset.i); }
+});
 
 /* ============ LOAD FLOW ============ */
 

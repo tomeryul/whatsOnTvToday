@@ -11,8 +11,11 @@
 // כל עוד apiKey ריק — האתר עובד רגיל בלי תגובות/לייקים.
 
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  appId: ""
+  apiKey: "AIzaSyAAFuZDCcUSbywRIS4i_tlugZyQEBmUXwE",
+  authDomain: "whatsontv-c6ab5.firebaseapp.com",
+  projectId: "whatsontv-c6ab5",
+  storageBucket: "whatsontv-c6ab5.firebasestorage.app",
+  messagingSenderId: "454853499296",
+  appId: "1:454853499296:web:881515e731e4506ea5ecc5",
+  measurementId: "G-Y24PJ2W2B3"
 };

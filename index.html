@@ -125,8 +125,8 @@
     </div>
 
     <div class="field" id="makoField" style="display:none">
-      <label>endpoint של קשת 12 (ה-XHR שמצאת בכלי הצותת)</label>
-      <input id="makoUrl" placeholder="הדבק כאן את כתובת ה-JSON שמחזירה את הלוח של mako">
+      <label>endpoint של קשת 12 (אופציונלי — נשאר ריק והלוח נטען אוטומטית)</label>
+      <input id="makoUrl" placeholder="ברירת מחדל: /AjaxPage?jspName=EPGResponse.jsp — מלא רק כדי לעקוף">
     </div>
 
     <p class="note" id="hint"></p>
@@ -136,15 +136,17 @@
   <div id="output"></div>
 
   <footer>
-    דף לקוח בלבד · אין API רשמי לערוצים · רשת 13 מרונדר בצד-שרת ולכן נמשך ומפורסר ישירות.<br>
-    קשת 12 טוען את הלוח דרך XHR — הרץ את סקריפט ה-Playwright כדי לאתר את ה-endpoint והדבק אותו למעלה.
+    דף לקוח בלבד · אין API רשמי לערוצים.<br>
+    רשת 13 נמשך מה-JSON המוטמע בעמוד · קשת 12 נמשך מ-endpoint ה-EPG של mako.<br>
+    שני הערוצים עובדים מהקופסה — אם פרוקסי אחד נכשל, נסה אחר מהרשימה.
   </footer>
 </div>
 
 <script>
 const SOURCES = {
   reshet13: "https://13tv.co.il/tv-guide/",
-  keshet12: "https://www.mako.co.il/tv-tv-schedule"
+  // ה-endpoint שמאחורי לוח השידורים של mako (קשת 12) — מחזיר JSON של כל השבוע
+  keshet12: "https://www.mako.co.il/AjaxPage?jspName=EPGResponse.jsp"
 };
 let channel = "reshet13";
 
@@ -153,8 +155,8 @@ const proxyEl = $("#proxy"), statusEl = $("#status"), outEl = $("#output");
 const makoField = $("#makoField"), hintEl = $("#hint");
 
 const HINTS = {
-  reshet13: "רשת 13 עובד מהקופסה — לחץ <b>טען לוח</b>. הלוח (כל השבוע) מחולץ ישירות מה-HTML.",
-  keshet12: "קשת 12 לא מחזיר את הלוח ב-HTML. הדבק <b>endpoint</b> שמצאת עם סקריפט ה-Playwright (שדה למטה), או נסה בכל זאת — לרוב יחזיר ריק."
+  reshet13: "רשת 13 עובד מהקופסה — לחץ <b>טען לוח</b>. הלוח (כל השבוע) מחולץ ישירות מה-JSON של האתר.",
+  keshet12: "קשת 12 עובד מהקופסה — לחץ <b>טען לוח</b>. הלוח נמשך מה-endpoint של mako (EPGResponse). אפשר להחליף endpoint ידנית בשדה למטה במקרה הצורך."
 };
 
 document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
@@ -228,6 +230,34 @@ function parseReshetLegacy(html){
   return days;
 }
 
+// חילוץ פריטי לוח מ-mako (קשת 12). ה-endpoint מחזיר JSON עם programs[],
+// כל פריט מכיל DisplayStartTime, ProgramName ו-Date (DD/MM/YYYY HH:MM:SS).
+// מקבצים לפי התאריך ומחשבים שם יום בעברית.
+function parseMako(raw){
+  const data = typeof raw === "string" ? JSON.parse(raw) : raw;
+  const progs = data.programs || [];
+  const HEB_DAYS = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+  const days = []; let curKey = null, cur = null;
+  progs.forEach(p => {
+    const time = p.DisplayStartTime, title = (p.ProgramName || "").trim();
+    if(!time || !title) return;
+    const datePart = (p.Date || "").split(" ")[0]; // DD/MM/YYYY
+    if(datePart !== curKey){
+      curKey = datePart;
+      let label = datePart;
+      const dm = datePart.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if(dm){
+        const dt = new Date(+dm[3], +dm[2]-1, +dm[1]);
+        label = HEB_DAYS[dt.getDay()] + " · " + dm[1] + "." + dm[2];
+      }
+      cur = { label, items: [] }; days.push(cur);
+    }
+    const url = (p.MakoTVURL || "").trim();
+    cur.items.push({ time, title, link: url.startsWith("http") ? url : null });
+  });
+  return days;
+}
+
 function render(days){
   if(!days.length){ setStatus("לא נמצאו פריטי לוח בתשובה — נסה פרוקסי אחר מהרשימה (allorigins.win).", true); return false; }
   const fallbackLabels = ["היום","מחר","יום 3","יום 4","יום 5","יום 6","יום 7","יום 8"];
@@ -261,24 +291,19 @@ $("#loadBtn").onclick = async () => {
       const html = await fetchText(SOURCES.reshet13);
       if(render(parseReshet(html))) setStatus("נטען ✓");
     } else {
-      const ep = $("#makoUrl").value.trim();
-      if(!ep){ setStatus("הדבק endpoint של קשת 12 (או החלף לרשת 13).", true); btn.disabled=false; return; }
+      // endpoint ברירת-מחדל של mako, או override ידני אם הוזן
+      const ep = $("#makoUrl").value.trim() || SOURCES.keshet12;
       setStatus("מושך מ-mako …");
       const raw = await fetchText(ep);
-      // ננסה JSON; אם לא — נציג גולמי כדי שתראה את המבנה ותתאים את הפרסר
       try {
-        const data = JSON.parse(raw);
+        if(render(parseMako(raw))) setStatus("נטען ✓");
+      } catch(e) {
+        // אם לא הצליח לפרסר — נציג את הגולמי כדי לאבחן
         outEl.innerHTML = `<ul class="list"><li><span class="title">
-          התקבל JSON. התאם את הפרסר למבנה הזה:<br><br>
-          <code style="white-space:pre-wrap;display:block">${esc(JSON.stringify(data,null,2).slice(0,1500))}</code>
-          </span></li></ul>`;
-        setStatus("התקבל JSON ✓ — ראה מבנה למטה");
-      } catch {
-        outEl.innerHTML = `<ul class="list"><li><span class="title">
-          התשובה אינה JSON. ייתכן שזה לא ה-endpoint הנכון.<br><br>
+          לא הצלחתי לפרסר את התשובה מ-mako (${esc(e.message)}). הנה ההתחלה הגולמית:<br><br>
           <code style="white-space:pre-wrap;display:block">${esc(raw.slice(0,800))}</code>
           </span></li></ul>`;
-        setStatus("התקבל תוכן לא-JSON", true);
+        setStatus("התקבלה תשובה לא-צפויה מ-mako — נסה פרוקסי אחר.", true);
       }
     }
   } catch(e){

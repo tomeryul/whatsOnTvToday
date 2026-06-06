@@ -39,3 +39,47 @@ node scripts/fetch-schedules.mjs   # דורש Node 18+ (fetch מובנה); לל�
 
 > כל תוכנית נשמרת ב-JSON עם `start` (epoch-ms מוחלט) ו-`time` (שעון ישראל),
 > כך שהמיזוג בין הערוצים והחלון של 24 שעות מדויקים גם סביב חצות.
+
+## תגובות ולייקים (Firebase)
+
+האתר תומך בלייקים ותגובות לסדרות, וברשימת "הכי אהובים" לפי המשתמשים. זה דורש
+פרויקט Firebase (חינמי לשימוש אישי). כל עוד `firebase-config.js` ריק — האתר עובד
+רגיל בלי הפיצ'רים האלה.
+
+### הקמה (פעם אחת)
+
+1. צור פרויקט ב-https://console.firebase.google.com (חינם).
+2. **Build → Authentication → Sign-in method → Google → Enable**.
+3. **Authentication → Settings → Authorized domains** → הוסף את דומיין ה-Pages (למשל `tomeryul.github.io`).
+4. **Build → Firestore Database → Create database** (Production mode).
+5. **Project settings ⚙ → Your apps → Web (`</>`)** → רשום אפליקציה והעתק את
+   ערכי `firebaseConfig` לקובץ `firebase-config.js` בריפו.
+6. **Firestore → Rules** → הדבק את החוקים הבאים ופרסם:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /series/{key} {
+      allow read: if true;
+      allow create, update: if request.auth != null;
+      match /likers/{uid} {
+        allow read: if true;
+        allow write: if request.auth != null && request.auth.uid == uid;
+      }
+      match /comments/{c} {
+        allow read: if true;
+        allow create: if request.auth != null
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000;
+        allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      }
+    }
+  }
+}
+```
+
+הזהות מבוססת על התחברות **Google**. שם התצוגה כברירת מחדל הוא השם מחשבון Google,
+וניתן לשנותו לכינוי מותאם (נשמר מקומית). המפתחות ב-`firebase-config.js` פומביים
+מטבעם — האבטחה נעשית דרך חוקי Firestore למעלה.

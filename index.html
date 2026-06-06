@@ -3,39 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>לוח שידורים · 12 / 13 / 11</title>
+<title>מה עכשיו בטלוויזיה · 12 / 13 / 11</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#141414; --card:#181818; --red:#e50914;
+    --bg:#141414; --card:#1c1c1c; --red:#e50914;
     --ink:#fff; --muted:#b3b3b3; --line:#2a2a2a;
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
   body{
     background:var(--bg);color:var(--ink);
-    font-family:"Heebo",system-ui,sans-serif;
-    min-height:100vh;line-height:1.4;-webkit-font-smoothing:antialiased;
+    font-family:"Heebo",system-ui,sans-serif;min-height:100vh;line-height:1.4;
+    -webkit-font-smoothing:antialiased;
   }
   a{color:inherit;text-decoration:none}
 
-  /* ===== top bar ===== */
   .topbar{
     position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-    padding:14px 4vw;background:linear-gradient(180deg,#141414 10%,rgba(20,20,20,.7) 70%,transparent);
+    padding:14px 4vw;background:linear-gradient(180deg,#141414 30%,rgba(20,20,20,.85));
+    border-bottom:1px solid var(--line);
   }
-  .brand{color:var(--red);font-weight:900;font-size:24px;letter-spacing:-.5px;white-space:nowrap}
-  .tabs{display:flex;gap:6px}
-  .tab{
-    padding:7px 15px;border-radius:6px;cursor:pointer;color:var(--muted);
-    font-weight:700;font-size:15px;transition:.15s;user-select:none;
+  .brand{color:var(--red);font-weight:900;font-size:22px;letter-spacing:-.5px;white-space:nowrap}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip-toggle{
+    display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:20px;cursor:pointer;
+    font-weight:700;font-size:14px;user-select:none;border:1px solid var(--line);
+    background:#1c1c1c;color:var(--muted);transition:.15s;
   }
-  .tab:hover{color:#fff}
-  .tab.active[data-ch="reshet13"]{color:#fff;background:rgba(229,9,20,.30)}
-  .tab.active[data-ch="keshet12"]{color:#fff;background:rgba(63,214,192,.22)}
-  .tab.active[data-ch="kan11"]{color:#fff;background:rgba(77,163,255,.28)}
+  .chip-toggle .swatch{width:10px;height:10px;border-radius:50%}
+  .chip-toggle.on{color:#fff;background:#2a2a2a;border-color:#444}
+  .chip-toggle.off{opacity:.45}
   .spacer{flex:1}
   .updated{color:#777;font-size:12px;white-space:nowrap}
   .icon-btn{
@@ -47,120 +47,76 @@
   .icon-btn.spin{animation:spin .8s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
 
-  /* ===== status ===== */
-  #status{padding:0 4vw;font-size:14px;color:var(--muted);min-height:0}
-  #status.show{padding:14px 4vw}
+  #status{padding:0 4vw;font-size:14px;color:var(--muted)}
+  #status.show{padding:16px 4vw}
   #status.err{color:#ff6b6b}
 
-  /* ===== hero ===== */
-  .hero{position:relative;width:100%;height:58vh;min-height:340px;max-height:620px;overflow:hidden;margin-bottom:8px}
-  .hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 20%}
-  .hero .scrim{
-    position:absolute;inset:0;
-    background:
-      linear-gradient(90deg,rgba(20,20,20,.95) 0%,rgba(20,20,20,.5) 45%,transparent 75%),
-      linear-gradient(0deg,#141414 2%,transparent 45%);
+  #output{padding:8px 4vw 60px}
+  .section{margin:14px 0 28px}
+  .section > h2{
+    font-size:clamp(18px,2.6vw,24px);font-weight:800;margin:0 0 14px;
+    display:flex;align-items:center;gap:10px;
   }
-  .hero .content{position:absolute;bottom:9%;right:4vw;left:4vw;max-width:620px}
-  .hero .badge{
-    display:inline-flex;align-items:center;gap:7px;color:#fff;font-weight:700;font-size:13px;
-    letter-spacing:.5px;background:rgba(229,9,20,.92);padding:5px 12px;border-radius:4px;margin-bottom:14px;
-  }
-  .hero .badge.upnext{background:rgba(255,255,255,.18)}
-  .dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite}
+  .section > h2 .sub{color:var(--muted);font-weight:600;font-size:14px}
+  .live-dot{width:11px;height:11px;border-radius:50%;background:var(--red);animation:pulse 1.6s infinite}
   @keyframes pulse{
-    0%{box-shadow:0 0 0 0 rgba(255,255,255,.6)}
-    70%{box-shadow:0 0 0 7px rgba(255,255,255,0)}
-    100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}
+    0%{box-shadow:0 0 0 0 rgba(229,9,20,.6)}
+    70%{box-shadow:0 0 0 8px rgba(229,9,20,0)}
+    100%{box-shadow:0 0 0 0 rgba(229,9,20,0)}
   }
-  .hero h1{font-size:clamp(30px,5.5vw,58px);font-weight:900;margin:0 0 10px;line-height:1.05}
-  .hero .meta{color:#e5e5e5;font-size:clamp(14px,2vw,18px);font-weight:600}
-  .hero .meta b{color:var(--red)}
-  .hero .hbtn{
-    display:inline-block;margin-top:16px;background:var(--red);color:#fff;font-weight:800;
-    font-size:15px;padding:10px 22px;border:none;border-radius:6px;cursor:pointer;
-  }
-  .hero .hbtn:hover{filter:brightness(1.1)}
 
-  /* ===== rows / rails ===== */
-  #output{padding-bottom:50px}
-  .row{margin:22px 0;position:relative}
-  .row h2{font-size:clamp(17px,2.4vw,22px);font-weight:700;margin:0 0 10px;padding:0 4vw}
-  .rail{
-    display:flex;gap:9px;overflow-x:auto;overflow-y:hidden;padding:8px 4vw 16px;
-    scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:#3a3a3a transparent;
+  .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+
+  .pcard{
+    display:flex;background:var(--card);border-radius:10px;overflow:hidden;cursor:pointer;
+    position:relative;transition:transform .18s ease, background .18s ease;border:1px solid #242424;
   }
-  .rail::-webkit-scrollbar{height:8px}
-  .rail::-webkit-scrollbar-thumb{background:#3a3a3a;border-radius:8px}
-  .rail::-webkit-scrollbar-track{background:transparent}
-  .card{
-    flex:0 0 auto;width:230px;scroll-snap-align:start;cursor:pointer;position:relative;
-    background:var(--card);border-radius:6px;overflow:hidden;
-    transition:transform .25s ease, box-shadow .25s ease;
+  .pcard:hover{transform:translateY(-3px);background:#242424}
+  .pcard .pthumb{width:118px;min-width:118px;height:96px;object-fit:cover;background:#222;display:block}
+  .pcard .pinfo{padding:10px 12px;min-width:0;flex:1;display:flex;flex-direction:column;gap:5px}
+  .prow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .chip{
+    font-size:12px;font-weight:800;padding:2px 9px;border-radius:20px;white-space:nowrap;line-height:1.6;
   }
-  .card:hover{transform:scale(1.07);box-shadow:0 10px 30px rgba(0,0,0,.6);z-index:2}
-  .card.live{outline:2px solid var(--red)}
-  .card .thumb{width:100%;height:130px;object-fit:cover;display:block;background:#222}
-  .card .nowbadge{
-    position:absolute;top:7px;right:7px;background:var(--red);color:#fff;font-size:11px;
-    font-weight:800;padding:2px 8px;border-radius:4px;display:flex;align-items:center;gap:5px;
-  }
-  .card .info{padding:9px 11px 11px}
-  .card .ctime{color:var(--red);font-weight:800;font-size:13px;font-variant-numeric:tabular-nums;margin-bottom:3px}
-  .card .ctitle{font-size:13.5px;font-weight:600;line-height:1.3;
+  .ptime{font-variant-numeric:tabular-nums;font-weight:800;font-size:14px;color:#fff}
+  .ptime .day{color:var(--muted);font-weight:600;font-size:12px}
+  .nowtag{color:var(--red);font-weight:800;font-size:12px;display:flex;align-items:center;gap:4px}
+  .nowtag .d{width:7px;height:7px;border-radius:50%;background:var(--red)}
+  .ptitle{font-size:15px;font-weight:700;line-height:1.25;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .pdesc{font-size:12.5px;color:var(--muted);line-height:1.35;
+    display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .pcard.live{border-color:var(--red)}
+  .pprogress{position:absolute;bottom:0;right:0;height:3px;background:var(--red)}
 
-  /* ===== rail arrows ===== */
-  .rail-arrow{
-    position:absolute;top:40px;bottom:24px;width:46px;border:none;cursor:pointer;
-    background:rgba(20,20,20,.55);color:#fff;font-size:26px;font-weight:700;z-index:5;
-    opacity:0;transition:opacity .2s;
-  }
-  .row:hover .rail-arrow{opacity:1}
-  .rail-arrow.start{right:0;border-radius:6px 0 0 6px}
-  .rail-arrow.end{left:0;border-radius:0 6px 6px 0}
-  .rail-arrow:hover{background:rgba(20,20,20,.85)}
-  @media (hover:none){.rail-arrow{display:none}}
-
-  /* ===== modal ===== */
-  .modal-overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,.8);display:none;
-    align-items:center;justify-content:center;z-index:100;padding:20px;
-  }
+  /* modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:none;
+    align-items:center;justify-content:center;z-index:100;padding:20px}
   .modal-overlay.open{display:flex}
-  .modal{
-    background:#181818;border-radius:10px;max-width:560px;width:100%;max-height:90vh;
-    overflow:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.7);animation:pop .2s ease;
-  }
+  .modal{background:#181818;border-radius:12px;max-width:560px;width:100%;max-height:90vh;
+    overflow:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.7);animation:pop .2s ease}
   @keyframes pop{from{transform:scale(.94);opacity:.4}to{transform:scale(1);opacity:1}}
-  .modal .mimg{width:100%;height:280px;object-fit:cover;display:block;background:#222;border-radius:10px 10px 0 0}
-  .modal .mclose{
-    position:absolute;top:12px;left:12px;width:38px;height:38px;border-radius:50%;
-    background:rgba(0,0,0,.65);color:#fff;border:none;font-size:20px;cursor:pointer;line-height:1;
-  }
+  .modal .mimg{width:100%;height:280px;object-fit:cover;display:block;background:#222;border-radius:12px 12px 0 0}
+  .modal .mclose{position:absolute;top:12px;left:12px;width:38px;height:38px;border-radius:50%;
+    background:rgba(0,0,0,.65);color:#fff;border:none;font-size:20px;cursor:pointer;line-height:1}
   .modal .mclose:hover{background:#000}
   .modal .mbody{padding:20px 26px 28px}
-  .modal h2{margin:0 0 8px;font-size:26px;font-weight:900;line-height:1.1}
+  .modal .mchip{font-size:13px;font-weight:800;padding:3px 12px;border-radius:20px}
+  .modal h2{margin:12px 0 8px;font-size:26px;font-weight:900;line-height:1.1}
   .modal .mmeta{color:var(--muted);font-weight:600;margin-bottom:16px;font-size:15px}
-  .modal .mmeta b{color:var(--red)}
+  .modal .mmeta b{color:#fff}
   .modal .mdesc{color:#dcdcdc;font-size:15px;line-height:1.65;white-space:pre-wrap}
-  .modal .mlink{
-    display:inline-block;margin-top:20px;background:var(--red);color:#fff;font-weight:800;
-    padding:11px 22px;border-radius:6px;
-  }
+  .modal .mlink{display:inline-block;margin-top:20px;background:var(--red);color:#fff;font-weight:800;
+    padding:11px 22px;border-radius:6px}
   .modal .mlink:hover{filter:brightness(1.1)}
 
-  footer{margin-top:30px;color:#777;font-size:12px;text-align:center;line-height:1.7;padding:0 18px 30px}
+  footer{margin-top:20px;color:#777;font-size:12px;text-align:center;line-height:1.7;padding:0 18px 30px}
 </style>
 </head>
 <body>
   <div class="topbar">
-    <div class="brand">לוח שידורים</div>
-    <div class="tabs">
-      <div class="tab active" data-ch="reshet13">רשת 13</div>
-      <div class="tab" data-ch="keshet12">קשת 12</div>
-      <div class="tab" data-ch="kan11">כאן 11</div>
-    </div>
+    <div class="brand">מה עכשיו בטלוויזיה</div>
+    <div class="chips" id="chips"></div>
     <div class="spacer"></div>
     <span class="updated" id="updated"></span>
     <button class="icon-btn" id="loadBtn" title="רענן">&#x21bb;</button>
@@ -170,15 +126,15 @@
   <div id="output"></div>
 
   <footer>
-    דף לקוח בלבד · הנתונים נמשכים בצד-שרת (GitHub Action) ונשמרים כ-JSON סטטי · רשת 13 · קשת 12 (mako) · כאן 11.
+    כל הערוצים בדף אחד · עכשיו בשידור ו-24 השעות הקרובות · נתונים נמשכים בצד-שרת (GitHub Action).
   </footer>
 
-  <!-- modal -->
   <div class="modal-overlay" id="modal">
     <div class="modal">
       <button class="mclose" id="modalClose" title="סגור">&times;</button>
       <img class="mimg" id="modalImg" alt="" onerror="this.style.display='none'">
       <div class="mbody">
+        <span class="mchip" id="modalChip"></span>
         <h2 id="modalTitle"></h2>
         <div class="mmeta" id="modalMeta"></div>
         <div class="mdesc" id="modalDesc"></div>
@@ -188,14 +144,17 @@
   </div>
 
 <script>
-const DATA = {
-  reshet13: "data/reshet13.json",
-  keshet12: "data/keshet12.json",
-  kan11:    "data/kan11.json"
+const CH = {
+  reshet13: { id:"reshet13", file:"data/reshet13.json", name:"רשת 13", color:"#e50914", text:"#fff" },
+  keshet12: { id:"keshet12", file:"data/keshet12.json", name:"קשת 12", color:"#3fd6c0", text:"#04201c" },
+  kan11:    { id:"kan11",    file:"data/kan11.json",    name:"כאן 11", color:"#4da3ff", text:"#06182e" }
 };
-const CHANNEL_NAMES = { reshet13: "רשת 13", keshet12: "קשת 12", kan11: "כאן 11" };
-let channel = "reshet13";
-let currentDays = [];
+const ORDER = ["reshet13","keshet12","kan11"];
+const HOUR = 3600e3, WINDOW = 24 * HOUR, DEFAULT_LEN = 90 * 60e3;
+
+let allPrograms = [];                 // כל התוכניות מכל הערוצים (עם end ו-ch)
+let windowed = [];                    // מה שמוצג כרגע (לשימוש המודאל)
+const active = new Set(ORDER);        // ערוצים פעילים (כולם כברירת מחדל)
 
 const $ = s => document.querySelector(s);
 const statusEl = $("#status"), outEl = $("#output"), updatedEl = $("#updated");
@@ -204,101 +163,152 @@ function setStatus(msg, isErr){
   statusEl.textContent = msg || "";
   statusEl.className = (msg ? "show " : "") + (isErr ? "err" : "");
 }
+function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 function relativeTime(iso){
-  const then = new Date(iso), now = new Date();
-  const mins = Math.round((now - then) / 60000);
+  const mins = Math.round((Date.now() - new Date(iso)) / 60000);
   if(isNaN(mins)) return "";
   if(mins < 1) return "עודכן הרגע";
   if(mins < 60) return `עודכן לפני ${mins} ד׳`;
   const hrs = Math.round(mins / 60);
   if(hrs < 24) return `עודכן לפני ${hrs} ש׳`;
-  return `עודכן לפני ${Math.round(hrs / 24)} ימים`;
+  return `עודכן לפני ${Math.round(hrs/24)} ימים`;
 }
 
-/* ============ RENDER (Netflix-style) ============ */
-
-function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
-const toMin = t => { const a = t.split(":"); return (+a[0])*60 + (+a[1]); };
-
-// מאתר את אינדקס התוכנית המשודרת "עכשיו" בתוך יום (לפי השעה הנוכחית).
-function liveIndex(day){
-  const items = day && day.items;
-  if(!items || !items.length) return { idx: 0, live: false };
-  const now = new Date(), nowMin = now.getHours()*60 + now.getMinutes();
-  let idx = 0, live = false;
-  for(let i=0;i<items.length;i++){ if(toMin(items[i].time) <= nowMin){ idx = i; live = true; } }
-  return { idx, live };
+// "02:00" או "מחר 02:00" לפי היום של התוכנית
+function timeLabel(start){
+  const d = new Date(start), now = new Date();
+  const day0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diff = Math.round((dDay - day0) / 86400e3);
+  const hhmm = new Intl.DateTimeFormat("he-IL",{hour:"2-digit",minute:"2-digit",hour12:false}).format(d);
+  const prefix = diff <= 0 ? "" : diff === 1 ? "מחר " : "";
+  return { prefix, hhmm };
 }
 
-function card(it, di, ii, isLive){
-  return `<div class="card${isLive ? " live" : ""}" data-d="${di}" data-i="${ii}">
-    ${isLive ? `<span class="nowbadge"><span class="dot"></span>עכשיו</span>` : ""}
-    ${it.img
-      ? `<img class="thumb" src="${esc(it.img)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
-      : `<span class="thumb"></span>`}
-    <div class="info">
-      <div class="ctime">${esc(it.time)}</div>
-      <div class="ctitle">${esc(it.title)}</div>
+/* ============ DATA ============ */
+
+async function loadAll(){
+  const btn = $("#loadBtn");
+  btn.disabled = true; btn.classList.add("spin");
+  setStatus("טוען לוח שידורים…");
+  try {
+    const loaded = await Promise.all(ORDER.map(async id => {
+      try {
+        const res = await fetch(CH[id].file + "?t=" + Date.now());
+        if(!res.ok) throw 0;
+        return await res.json();
+      } catch { return null; }
+    }));
+
+    allPrograms = [];
+    let oldest = null;
+    loaded.forEach((json, i) => {
+      if(!json || !json.programs) return;
+      const id = ORDER[i];
+      const progs = json.programs.slice().sort((a,b)=>a.start-b.start);
+      progs.forEach((p, idx) => {
+        const next = progs[idx+1];
+        allPrograms.push({
+          ...p, ch: id,
+          end: next ? next.start : p.start + DEFAULT_LEN
+        });
+      });
+      if(json.updated && (!oldest || json.updated < oldest)) oldest = json.updated;
+    });
+
+    if(!allPrograms.length){
+      setStatus("אין נתונים זמינים. ייתכן שה-GitHub Action עוד לא יצר את הקבצים.", true);
+    } else {
+      setStatus("");
+      updatedEl.textContent = oldest ? relativeTime(oldest) : "";
+      renderView();
+    }
+  } catch(e){
+    setStatus("שגיאה בטעינה: " + e.message, true);
+  }
+  btn.disabled = false; btn.classList.remove("spin");
+}
+
+/* ============ RENDER ============ */
+
+function chip(id){
+  const c = CH[id];
+  return `<span class="chip" style="background:${c.color};color:${c.text}">${esc(c.name)}</span>`;
+}
+
+function pcard(p, idx){
+  const isLive = p.start <= Date.now() && p.end > Date.now();
+  const { prefix, hhmm } = timeLabel(p.start);
+  let progress = "";
+  if(isLive){
+    const pct = Math.min(100, Math.max(0, (Date.now() - p.start) / (p.end - p.start) * 100));
+    progress = `<span class="pprogress" style="width:${pct}%"></span>`;
+  }
+  return `<div class="pcard${isLive ? " live" : ""}" data-idx="${idx}">
+    ${p.img
+      ? `<img class="pthumb" src="${esc(p.img)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
+      : `<span class="pthumb"></span>`}
+    <div class="pinfo">
+      <div class="prow">
+        ${chip(p.ch)}
+        <span class="ptime">${prefix ? `<span class="day">${prefix}</span>` : ""}${hhmm}</span>
+        ${isLive ? `<span class="nowtag"><span class="d"></span>עכשיו</span>` : ""}
+      </div>
+      <div class="ptitle">${esc(p.title)}</div>
+      ${p.desc ? `<div class="pdesc">${esc(p.desc)}</div>` : ""}
     </div>
+    ${progress}
   </div>`;
 }
 
-function render(days){
-  currentDays = days;
-  if(!days || !days.length){ setStatus("אין נתונים זמינים לערוץ זה.", true); return false; }
-  const fallbackLabels = ["היום","מחר","יום 3","יום 4","יום 5","יום 6","יום 7","יום 8"];
+function renderView(){
+  const now = Date.now(), horizon = now + WINDOW;
+  windowed = allPrograms
+    .filter(p => active.has(p.ch) && p.end > now && p.start <= horizon)
+    .sort((a,b) => a.start - b.start);
 
-  const todayLive = liveIndex(days[0]);
-  const hero = Object.assign({}, days[0].items[todayLive.idx]);
-  if(!hero.img){ const w = days[0].items.find(it => it.img); if(w) hero.img = w.img; }
-
-  const heroHtml = `
-    <div class="hero">
-      ${hero.img ? `<img src="${esc(hero.img)}" alt="" onerror="this.style.display='none'">` : ""}
-      <div class="scrim"></div>
-      <div class="content">
-        <div class="badge ${todayLive.live ? "" : "upnext"}">
-          ${todayLive.live ? `<span class="dot"></span> עכשיו בשידור` : esc((days[0].label || "הלוח"))}
-        </div>
-        <h1>${esc(hero.title)}</h1>
-        <div class="meta"><b>${esc(hero.time)}</b> · ${esc(CHANNEL_NAMES[channel] || "")}</div>
-        <button class="hbtn" data-d="0" data-i="${todayLive.idx}">פרטים ›</button>
-      </div>
-    </div>`;
-
-  const rowsHtml = days.map((day, di) => {
-    const label = day.label || fallbackLabels[di] || ("יום " + (di+1));
-    const liveIdx = di === 0 && todayLive.live ? todayLive.idx : -1;
-    return `<section class="row">
-      <h2>${esc(label)}</h2>
-      <button class="rail-arrow start" data-dir="1" aria-label="הקודם">&#8250;</button>
-      <button class="rail-arrow end" data-dir="-1" aria-label="הבא">&#8249;</button>
-      <div class="rail">${day.items.map((it, ii) => card(it, di, ii, ii === liveIdx)).join("")}</div>
-    </section>`;
-  }).join("");
-
-  outEl.innerHTML = heroHtml + rowsHtml;
-
-  if(todayLive.live){
-    const liveCard = outEl.querySelector('.card.live');
-    if(liveCard) liveCard.scrollIntoView({ inline: "center", block: "nearest" });
+  if(!windowed.length){
+    outEl.innerHTML = `<p style="color:#888;padding:30px 0">אין תוכניות להצגה (בדוק שהערוצים מסומנים למעלה).</p>`;
+    return;
   }
-  return true;
+
+  const live = [], upcoming = [];
+  windowed.forEach((p, idx) => (p.start <= now ? live : upcoming).push(idx));
+
+  let html = "";
+  if(live.length){
+    html += `<div class="section">
+      <h2><span class="live-dot"></span>עכשיו בשידור</h2>
+      <div class="grid">${live.map(i => pcard(windowed[i], i)).join("")}</div>
+    </div>`;
+  }
+  if(upcoming.length){
+    html += `<div class="section">
+      <h2>בהמשך <span class="sub">· 24 השעות הקרובות</span></h2>
+      <div class="grid">${upcoming.map(i => pcard(windowed[i], i)).join("")}</div>
+    </div>`;
+  }
+  outEl.innerHTML = html;
 }
 
 /* ============ MODAL ============ */
 
-function openModal(di, ii){
-  const day = currentDays[di]; if(!day) return;
-  const it = day.items[ii]; if(!it) return;
-  $("#modalTitle").textContent = it.title;
-  $("#modalMeta").innerHTML = `<b>${esc(it.time)}</b> · ${esc(day.label || "")} · ${esc(CHANNEL_NAMES[channel] || "")}`;
-  $("#modalDesc").textContent = it.desc || "אין תיאור זמין לתוכנית זו.";
+function openModal(idx){
+  const p = windowed[idx]; if(!p) return;
+  const c = CH[p.ch];
+  const { prefix, hhmm } = timeLabel(p.start);
+  const chipEl = $("#modalChip");
+  chipEl.textContent = c.name;
+  chipEl.style.background = c.color; chipEl.style.color = c.text;
+  $("#modalTitle").textContent = p.title;
+  const endTxt = new Intl.DateTimeFormat("he-IL",{hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(p.end));
+  $("#modalMeta").innerHTML = `<b>${prefix}${hhmm}–${endTxt}</b> · ${esc(c.name)}`;
+  $("#modalDesc").textContent = p.desc || "אין תיאור זמין לתוכנית זו.";
   const img = $("#modalImg");
-  if(it.img){ img.src = it.img; img.style.display = ""; } else { img.removeAttribute("src"); img.style.display = "none"; }
+  if(p.img){ img.src = p.img; img.style.display = ""; } else { img.removeAttribute("src"); img.style.display = "none"; }
   const link = $("#modalLink");
-  if(it.link){ link.href = it.link; link.style.display = ""; } else { link.style.display = "none"; }
+  if(p.link){ link.href = p.link; link.style.display = ""; } else { link.style.display = "none"; }
   $("#modal").classList.add("open");
 }
 function closeModal(){ $("#modal").classList.remove("open"); }
@@ -307,50 +317,34 @@ $("#modalClose").onclick = closeModal;
 $("#modal").onclick = e => { if(e.target.id === "modal") closeModal(); };
 document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
 
-// האזנה מרכזית ללחיצות בלוח: כרטיס/כפתור-פרטים → מודאל, חיצים → גלילה
 outEl.addEventListener("click", e => {
-  const arrow = e.target.closest(".rail-arrow");
-  if(arrow){
-    const rail = arrow.closest(".row").querySelector(".rail");
-    rail.scrollBy({ left: (+arrow.dataset.dir) * rail.clientWidth * 0.85, behavior: "smooth" });
-    return;
-  }
-  const trigger = e.target.closest(".card, .hbtn");
-  if(trigger){ openModal(+trigger.dataset.d, +trigger.dataset.i); }
+  const card = e.target.closest(".pcard");
+  if(card) openModal(+card.dataset.idx);
 });
 
-/* ============ LOAD FLOW ============ */
+/* ============ CHANNEL CHIPS ============ */
 
-async function loadSchedule(){
-  const btn = $("#loadBtn");
-  btn.disabled = true; btn.classList.add("spin");
-  outEl.innerHTML = ""; updatedEl.textContent = "";
-  setStatus("טוען לוח שידורים…");
-  try {
-    const res = await fetch(DATA[channel] + "?t=" + Date.now());
-    if(!res.ok) throw new Error("HTTP " + res.status);
-    const json = await res.json();
-    if(render(json.days)){
-      setStatus("");
-      updatedEl.textContent = relativeTime(json.updated);
-    }
-  } catch(e){
-    setStatus("לא ניתן לטעון את הלוח (" + e.message + "). ייתכן שה-GitHub Action עוד לא יצר את הנתונים.", true);
-  }
-  btn.disabled = false; btn.classList.remove("spin");
+function buildChips(){
+  $("#chips").innerHTML = ORDER.map(id => {
+    const c = CH[id];
+    return `<div class="chip-toggle on" data-ch="${id}">
+      <span class="swatch" style="background:${c.color}"></span>${esc(c.name)}
+    </div>`;
+  }).join("");
+  $("#chips").querySelectorAll(".chip-toggle").forEach(el => el.onclick = () => {
+    const id = el.dataset.ch;
+    if(active.has(id) && active.size === 1) return; // לא לכבות את האחרון
+    if(active.has(id)){ active.delete(id); el.classList.replace("on","off"); }
+    else { active.add(id); el.classList.replace("off","on"); }
+    renderView();
+  });
 }
 
-document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
-  if(t.classList.contains("active")) return;
-  document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
-  t.classList.add("active");
-  channel = t.dataset.ch;
-  loadSchedule();
-});
-$("#loadBtn").onclick = loadSchedule;
-
-// טעינה אוטומטית בפתיחת הדף
-loadSchedule();
+$("#loadBtn").onclick = loadAll;
+buildChips();
+loadAll();
+// רענון תצוגה כל דקה כדי שה"עכשיו בשידור" יישאר מדויק
+setInterval(() => { if(allPrograms.length) renderView(); }, 60000);
 </script>
 </body>
 </html>

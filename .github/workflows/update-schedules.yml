@@ -2,7 +2,7 @@ name: Update TV schedules
 
 on:
   schedule:
-    - cron: "0 */6 * * *"   # כל 6 שעות
+    - cron: "0 * * * *"   # כל שעה
   workflow_dispatch:         # הרצה ידנית מכפתור ב-GitHub
 
 permissions:

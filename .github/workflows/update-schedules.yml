@@ -5,8 +5,11 @@ on:
     - cron: "0 * * * *"   # כל שעה
   workflow_dispatch:         # הרצה ידנית מכפתור ב-GitHub
 
+# הרשאות: כתיבה לריפו (קומיט נתונים) + פרסום ל-GitHub Pages
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: update-schedules
@@ -15,6 +18,9 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,3 +44,17 @@ jobs:
           else
             echo "No schedule changes."
           fi
+
+      # פרסום ישיר ל-GitHub Pages בכל ריצה — כך האתר תמיד מציג את הנתונים הטריים,
+      # ללא תלות בענף או בטריגרים של push. (דורש Settings → Pages → Source: GitHub Actions)
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

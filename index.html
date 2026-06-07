@@ -415,14 +415,6 @@ function renderView(){
     html += `<div class="section"><h2>🌙 מה בערב <span class="sub">· ${primePrefix.trim()} 21:40</span></h2>
       <div class="grid">${primeList.map((p,i)=>primeCard(p,i,primePrefix)).join("")}</div></div>`;
   }
-  // ספורט — שידורים חיים מעכשיו ול-24 השעות הקרובות, מכל ערוצי ספורט 5/ONE
-  const sportNow = sportPrograms
-    .filter(p => p.start + 150*60e3 > now && p.start <= horizon)
-    .sort((a,b)=>a.start-b.start);
-  if(sportNow.length){
-    html += `<div class="section"><h2>🏆 ספורט <span class="sub">· שידורים חיים</span></h2>
-      <div class="grid">${sportNow.map(sportCard).join("")}</div></div>`;
-  }
   if(SOCIAL && topList.length){
     html += `<div class="section"><h2><span class="star">★</span>הכי אהובים <span class="sub">· לפי המשתמשים</span></h2>
       <div class="grid">${topList.slice(0,12).map(topCard).join("")}</div></div>`;

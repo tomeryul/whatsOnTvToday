@@ -178,13 +178,61 @@ async function fetchKan() {
   return programs;
 }
 
+/* ============ ספורט (ספורט 5 / ONE — כל ערוצי הספורט) ============ */
+// ה-endpoint מחזיר טבלת HTML לכל ערוץ (ערוץ הספורט, ספורט 5+, Live, Stars, Gold).
+// אירועי שידור חיים בלבד — לכן sparse. כל פריט: שעה, כותרת, סימון "ישיר".
+async function fetchSport5() {
+  const programs = [];
+  const today = new Date();
+  for (let i = 0; i < 3; i++) {
+    const dt = new Date(today);
+    dt.setDate(today.getDate() + i);
+    const y = dt.getFullYear(), mo = dt.getMonth() + 1, d = dt.getDate();
+    const dateParam = `${y}-${String(mo).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+    let html;
+    try {
+      html = await getText(`https://www.sport5.co.il/Ajax/GetBroadcastSheetData.aspx?date=${dateParam}`, {
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": "https://www.sport5.co.il/html/pages/broadcastsheet.html"
+      });
+    } catch (e) {
+      console.warn(`Sport5 day ${dateParam} failed: ${e.message}`);
+      continue;
+    }
+    let cur = null;
+    for (const row of html.split(/<tr/)) {
+      const hm = row.match(/tr-header[\s\S]*?alt="([^"]*)"/);
+      if (hm) {
+        cur = clean(hm[1]);
+        // מסננים פלטפורמות שאינן ערוץ טלוויזיה (אתר, מובייל, רדיו)
+        if (/אתר|מובייל|רדיו|radio|mobile|web/i.test(cur)) cur = null;
+        continue;
+      }
+      const tm = row.match(/class="date">[\s\S]*?(\d{1,2}:\d{2})/);
+      const ti = row.match(/class="text">([\s\S]*?)<\/td>/);
+      if (cur && tm && ti) {
+        const title = clean(ti[1].replace(/<[^>]+>/g, ""));
+        if (!title) continue;
+        const [hh, mi] = tm[1].split(":").map(Number);
+        const start = israelWallToEpoch(y, mo, d, hh, mi);
+        programs.push({
+          start, time: israelHHMM(start), title,
+          channel: cur, live: /alt="ישיר"/.test(row), link: null, img: null, desc: ""
+        });
+      }
+    }
+  }
+  if (!programs.length) throw new Error("Sport5: no programs parsed");
+  return programs;
+}
+
 /* ============ main ============ */
 function dedupeSort(programs) {
   programs.sort((a, b) => a.start - b.start);
   const out = [];
   for (const p of programs) {
     const last = out[out.length - 1];
-    if (last && last.start === p.start && last.title === p.title) continue;
+    if (last && last.start === p.start && last.title === p.title && last.channel === p.channel) continue;
     out.push(p);
   }
   return out;
@@ -207,7 +255,8 @@ await mkdir(DATA_DIR, { recursive: true });
 const results = await Promise.all([
   build("reshet13", "רשת 13", fetchReshet),
   build("keshet12", "קשת 12", fetchMako),
-  build("kan11", "כאן 11", fetchKan)
+  build("kan11", "כאן 11", fetchKan),
+  build("sport", "ספורט", fetchSport5)
 ]);
 if (!results.some(Boolean)) {
   console.error("All channels failed");

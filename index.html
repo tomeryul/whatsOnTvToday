@@ -25,6 +25,12 @@
   .chip-toggle .swatch{width:10px;height:10px;border-radius:50%}
   .chip-toggle.on{color:#fff;background:#2a2a2a;border-color:#444}
   .chip-toggle.off{opacity:.45}
+  .vtabs{display:flex;gap:4px;background:#1c1c1c;border:1px solid var(--line);border-radius:10px;padding:4px}
+  .vtab{background:none;border:none;color:var(--muted);font-weight:800;font-size:14px;cursor:pointer;
+    padding:7px 14px;border-radius:7px;transition:.15s}
+  .vtab:hover{color:#fff}
+  .vtab.active{background:var(--red);color:#fff}
+  .chips.hidden{display:none}
   .spacer{flex:1}
   .who{color:var(--muted);font-size:12px;white-space:nowrap;display:flex;align-items:center;gap:7px}
   .who b{color:#fff}
@@ -76,6 +82,7 @@
   .scard:hover{transform:none;background:var(--card)}
   .sport-chip{background:#1f7a4d;color:#eafff3}
   .sport-thumb{display:flex;align-items:center;justify-content:center;font-size:34px;background:#14241c}
+  .sport-logo{object-fit:contain !important;padding:14px;background:#10261b}
   .livetag{color:#ff8a3d;font-weight:800;font-size:12px}
   .pmeta{display:flex;align-items:center;gap:14px;margin-top:auto;padding-top:2px}
   .likebtn{display:inline-flex;align-items:center;gap:5px;background:none;border:none;color:var(--muted);
@@ -148,7 +155,11 @@
 </head>
 <body>
   <div class="topbar">
-    <div class="brand">מה עכשיו בטלוויזיה</div>
+    <div class="brand">מה עכשיו</div>
+    <div class="vtabs" id="vtabs">
+      <button class="vtab active" data-view="tv">📺 טלוויזיה</button>
+      <button class="vtab" data-view="sport">🏆 ספורט</button>
+    </div>
     <div class="chips" id="chips"></div>
     <div class="spacer"></div>
     <span class="who" id="who"></span>
@@ -221,6 +232,7 @@ const HOUR = 3600e3, WINDOW = 24*HOUR, DEFAULT_LEN = 90*60e3;
 let allPrograms = [], windowed = [], primeList = [], sportPrograms = [];
 const active = new Set(ORDER);
 let currentModal = null;        // {key,title,ch,img,desc,start,end,link}
+let view = "tv";                // "tv" (ערוצים רגילים) או "sport"
 
 const $ = s => document.querySelector(s);
 const statusEl = $("#status"), outEl = $("#output"), updatedEl = $("#updated");
@@ -359,7 +371,9 @@ function sportCard(p){
   const { prefix, hhmm } = timeLabel(p.start);
   const liveNow = p.start <= Date.now() && p.start + 150*60e3 > Date.now();
   return `<div class="pcard scard">
-    <span class="pthumb sport-thumb">🏅</span>
+    ${p.img
+      ? `<img class="pthumb sport-logo" src="${esc(p.img)}" alt="${esc(p.channel)}" loading="lazy" onerror="this.classList.add('sport-thumb');this.removeAttribute('src')">`
+      : `<span class="pthumb sport-thumb">🏅</span>`}
     <div class="pinfo">
       <div class="prow">
         <span class="chip sport-chip">${esc(p.channel)}</span>
@@ -373,6 +387,8 @@ function sportCard(p){
 }
 
 function renderView(){
+  if(view === "sport"){ renderSport(); return; }
+
   const now = Date.now(), horizon = now + WINDOW;
   windowed = allPrograms.filter(p => active.has(p.ch) && p.end > now && p.start <= horizon)
                         .sort((a,b)=>a.start-b.start);
@@ -414,6 +430,31 @@ function renderView(){
   if(upcoming.length){
     html += `<div class="section"><h2>בהמשך <span class="sub">· 24 השעות הקרובות</span></h2>
       <div class="grid">${upcoming.map(i=>pcard(windowed[i],i)).join("")}</div></div>`;
+  }
+  outEl.innerHTML = html;
+}
+
+// טאב הספורט — שידורים חיים מכל ערוצי ספורט 5 / ONE
+function renderSport(){
+  const now = Date.now();
+  const list = sportPrograms
+    .filter(p => p.start + 150*60e3 > now && p.start <= now + 2*WINDOW)
+    .sort((a,b)=>a.start-b.start);
+  if(!list.length){
+    outEl.innerHTML = `<div class="section"><h2>🏆 ספורט</h2>
+      <p style="color:#888;padding:10px 0">אין כרגע שידורי ספורט קרובים.</p></div>`;
+    return;
+  }
+  const liveItems = list.filter(p => p.start <= now && p.start + 150*60e3 > now);
+  const next = list.filter(p => p.start > now);
+  let html = "";
+  if(liveItems.length){
+    html += `<div class="section"><h2><span class="live-dot"></span>עכשיו בספורט</h2>
+      <div class="grid">${liveItems.map(sportCard).join("")}</div></div>`;
+  }
+  if(next.length){
+    html += `<div class="section"><h2>🏆 שידורים קרובים <span class="sub">· ספורט 5 / ONE</span></h2>
+      <div class="grid">${next.map(sportCard).join("")}</div></div>`;
   }
   outEl.innerHTML = html;
 }
@@ -489,10 +530,21 @@ function buildChips(){
   });
 }
 
+// מעבר בין טאב טלוויזיה לטאב ספורט
+$("#vtabs").querySelectorAll(".vtab").forEach(el => el.onclick = () => {
+  if(el.classList.contains("active")) return;
+  $("#vtabs").querySelectorAll(".vtab").forEach(x => x.classList.remove("active"));
+  el.classList.add("active");
+  view = el.dataset.view;
+  $("#chips").classList.toggle("hidden", view !== "tv");   // צ'יפים רק בטלוויזיה
+  outEl.scrollTo?.(0, 0); window.scrollTo(0, 0);
+  if(allPrograms.length || sportPrograms.length) renderView();
+});
+
 $("#loadBtn").onclick = loadAll;
 buildChips();
 loadAll();
-setInterval(() => { if(allPrograms.length) renderView(); }, 60000);
+setInterval(() => { if(allPrograms.length || sportPrograms.length) renderView(); }, 60000);
 
 /* ============================================================
    SOCIAL — Firebase (משתמשים אנונימיים, כינוי, לייקים, תגובות)

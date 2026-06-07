@@ -199,13 +199,15 @@ async function fetchSport5() {
       console.warn(`Sport5 day ${dateParam} failed: ${e.message}`);
       continue;
     }
-    let cur = null;
+    let cur = null, curLogo = null;
     for (const row of html.split(/<tr/)) {
-      const hm = row.match(/tr-header[\s\S]*?alt="([^"]*)"/);
-      if (hm) {
-        cur = clean(hm[1]);
+      if (/tr-header/.test(row)) {
+        const alt = row.match(/alt="([^"]*)"/);
+        const src = row.match(/<img[^>]*src="([^"]*)"/);
+        cur = alt ? clean(alt[1]) : null;
+        curLogo = src ? (src[1].startsWith("http") ? src[1] : "https://www.sport5.co.il" + src[1]) : null;
         // מסננים פלטפורמות שאינן ערוץ טלוויזיה (אתר, מובייל, רדיו)
-        if (/אתר|מובייל|רדיו|radio|mobile|web/i.test(cur)) cur = null;
+        if (cur && /אתר|מובייל|רדיו|radio|mobile|web/i.test(cur)) cur = null;
         continue;
       }
       const tm = row.match(/class="date">[\s\S]*?(\d{1,2}:\d{2})/);
@@ -217,7 +219,7 @@ async function fetchSport5() {
         const start = israelWallToEpoch(y, mo, d, hh, mi);
         programs.push({
           start, time: israelHHMM(start), title,
-          channel: cur, live: /alt="ישיר"/.test(row), link: null, img: null, desc: ""
+          channel: cur, live: /alt="ישיר"/.test(row), link: null, img: curLogo, desc: ""
         });
       }
     }

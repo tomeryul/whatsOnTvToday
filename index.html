@@ -236,6 +236,29 @@
   .nick .save{background:var(--red);color:#fff}
   .nick .cancel{background:#2a2a2a;color:#ccc}
 
+  /* search */
+  .searchbar{display:none;align-items:center;gap:8px;padding:10px 4vw;background:#141414;border-bottom:1px solid var(--line)}
+  .searchbar.open{display:flex}
+  .searchbar input{flex:1;background:#1c1c1c;border:1px solid var(--line);color:#fff;border-radius:10px;
+    padding:11px 14px;font:inherit;font-size:15px}
+  .searchbar input:focus{outline:none;border-color:#555}
+  .sb-clear{background:#2a2a2a;border:none;color:#ccc;width:40px;height:40px;border-radius:10px;cursor:pointer;font-size:18px;flex-shrink:0}
+  .icon-btn.active{background:var(--red)}
+
+  /* live scores */
+  .scores{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(236px,1fr))}
+  .scard2{background:#181818;border:1px solid #2b2b2b;border-radius:10px;padding:11px 14px}
+  .scard2 .sstatus{color:#74e0a6;font-weight:800;font-size:12px;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .scard2 .steams{display:flex;align-items:center;gap:10px}
+  .scard2 .tn{font-weight:700;font-size:13.5px;flex:1;min-width:0;line-height:1.2}
+  .scard2 .tn:last-child{text-align:left}
+  .scard2 .sc{font-weight:900;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#fff;flex-shrink:0}
+
+  /* reminder (.ics) button */
+  .mics{display:inline-flex;align-items:center;gap:7px;background:#262626;border:1px solid #3a3a3a;color:#fff;
+    font-weight:800;font-size:15px;padding:9px 18px;border-radius:8px;cursor:pointer;transition:.15s}
+  .mics:hover{background:#303030}
+
   footer{margin-top:20px;color:#777;font-size:12px;text-align:center;line-height:1.7;padding:0 18px 30px}
 </style>
 </head>
@@ -250,7 +273,13 @@
     <div class="spacer"></div>
     <span class="who" id="who"></span>
     <span class="updated" id="updated"></span>
+    <button class="icon-btn" id="searchBtn" title="חיפוש">🔍</button>
     <button class="icon-btn" id="loadBtn" title="רענן">&#x21bb;</button>
+  </div>
+
+  <div class="searchbar" id="searchbar">
+    <input id="searchInput" type="search" inputmode="search" placeholder="חיפוש תוכנית או משחק…" autocomplete="off">
+    <button class="sb-clear" id="searchClear" title="נקה">&times;</button>
   </div>
 
   <div id="status"></div>
@@ -325,6 +354,7 @@ let allPrograms = [], windowed = [], primeList = [], sportPrograms = [];
 const active = new Set(ORDER);
 let currentModal = null;        // {key,title,ch,img,desc,start,end,link}
 let view = "tv";                // "tv" (ערוצים רגילים) או "sport"
+let searchQuery = "", sportScores = [];
 
 const $ = s => document.querySelector(s);
 const statusEl = $("#status"), outEl = $("#output"), updatedEl = $("#updated");
@@ -534,6 +564,7 @@ function heroBlock(p){
 }
 
 function renderView(){
+  if(searchQuery){ renderSearch(); return; }
   if(view === "sport"){ renderSport(); return; }
 
   const now = Date.now(), horizon = now + WINDOW;
@@ -576,20 +607,20 @@ function renderView(){
   outEl.innerHTML = html;
 }
 
-// טאב הספורט — שידורים חיים מכל ערוצי ספורט 5 / ONE
+// טאב הספורט — תוצאות חיות + שידורים חיים מכל ערוצי ספורט 5 / ONE
 function renderSport(){
   const now = Date.now();
+  let html = "";
+  const liveGames = sportScores.filter(g => g.live);
+  if(liveGames.length){
+    html += `<div class="section"><h2><span class="live-dot"></span>תוצאות חיות <span class="sub">· ${liveGames.length} משחקים</span></h2>
+      <div class="scores">${liveGames.map(scoreCard).join("")}</div></div>`;
+  }
   const list = sportPrograms
     .filter(p => p.start + 150*60e3 > now && p.start <= now + 2*WINDOW)
     .sort((a,b)=>a.start-b.start);
-  if(!list.length){
-    outEl.innerHTML = `<div class="section"><h2>🏆 ספורט</h2>
-      <p style="color:#888;padding:10px 0">אין כרגע שידורי ספורט קרובים.</p></div>`;
-    return;
-  }
   const liveItems = list.filter(p => p.start <= now && p.start + 150*60e3 > now);
   const next = list.filter(p => p.start > now);
-  let html = "";
   if(liveItems.length){
     html += `<div class="section"><h2><span class="live-dot"></span>עכשיו בספורט</h2>
       <div class="slist">${liveItems.map(sportRow).join("")}</div></div>`;
@@ -598,7 +629,85 @@ function renderSport(){
     html += `<div class="section"><h2>🏆 שידורים קרובים <span class="sub">· ספורט 5 / ONE</span></h2>
       <div class="slist">${next.map(sportRow).join("")}</div></div>`;
   }
+  if(!html){
+    html = `<div class="section"><h2>🏆 ספורט</h2>
+      <p style="color:#888;padding:10px 0">אין כרגע שידורי ספורט קרובים.</p></div>`;
+  }
   outEl.innerHTML = html;
+}
+
+// חיפוש — תוכניות ומשחקים מכל הערוצים (מעבר לחלון 24 השעות)
+function renderSearch(){
+  const q = searchQuery.toLowerCase();
+  const now = Date.now();
+  windowed = allPrograms.filter(p => p.end > now && p.title.toLowerCase().includes(q)).sort((a,b)=>a.start-b.start);
+  const sp = sportPrograms.filter(p => p.start + 150*60e3 > now && p.title.toLowerCase().includes(q)).sort((a,b)=>a.start-b.start);
+  if(!windowed.length && !sp.length){
+    outEl.innerHTML = `<p style="color:#888;padding:30px 0">לא נמצאו תוצאות עבור "${esc(searchQuery)}".</p>`;
+    return;
+  }
+  let html = "";
+  if(windowed.length){
+    html += `<div class="section"><h2>🔎 תוצאות <span class="sub">· ${windowed.length} בטלוויזיה</span></h2>
+      <div class="grid">${windowed.map((p,i)=>pcard(p,i)).join("")}</div></div>`;
+  }
+  if(sp.length){
+    html += `<div class="section"><h2>🏆 ספורט <span class="sub">· ${sp.length} תוצאות</span></h2>
+      <div class="slist">${sp.map(sportRow).join("")}</div></div>`;
+  }
+  outEl.innerHTML = html;
+}
+
+// ===== תוצאות חיות מספורט 5 (ה-endpoint מחזיר CORS פתוח — נמשך ישירות מהדפדפן) =====
+function stripHtml(s){ const d = document.createElement("div"); d.innerHTML = s; return (d.textContent || "").replace(/\s+/g," ").trim(); }
+function parseScoreboard(h){
+  const games = [];
+  for(const b of (h.match(/<li[^>]*game_id[^>]*>[\s\S]*?<\/li>/g) || [])){
+    const status = (b.match(/class="heading">[\s\S]*?title="([^"]*)"/) || [])[1] || "";
+    const cls = (b.match(/class="score([^"]*)"/) || [])[1] || "";
+    const teams = [...b.matchAll(/class="team-name"[^>]*>([\s\S]*?)<\/span>/g)].map(m => stripHtml(m[1]));
+    const num = (b.match(/class="num"[^>]*>([\s\S]*?)<\/span>/) || [])[1] || "";
+    if(teams.length === 2 && teams[0]){
+      games.push({ status: stripHtml(status), live: /green/.test(cls), t1: teams[0], t2: teams[1], score: stripHtml(num) });
+    }
+  }
+  return games;
+}
+async function fetchScores(){
+  try {
+    const r = await fetch("https://www.sport5.co.il/Ajax/GetLiveResults.aspx", { cache:"no-store" });
+    if(r.ok) sportScores = parseScoreboard(await r.text());
+  } catch(e){ /* התעלם — לא קריטי */ }
+}
+function scoreCard(g){
+  return `<div class="scard2">
+    <div class="sstatus"><span class="live-dot" style="width:8px;height:8px"></span>${esc(g.status)}</div>
+    <div class="steams"><span class="tn">${esc(g.t1)}</span><span class="sc">${esc(g.score)}</span><span class="tn">${esc(g.t2)}</span></div>
+  </div>`;
+}
+
+// ===== תזכורת — הורדת אירוע יומן (.ics) עם התראה 10 דק' לפני =====
+function icsEsc(s){ return String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n"); }
+function icsDownload(p){
+  const fmt = ms => new Date(ms).toISOString().replace(/[-:]/g,"").replace(/\.\d{3}Z$/,"Z");
+  const end = p.end || (p.start + 3600e3);
+  const ics = [
+    "BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//whatsOnTv//HE//","CALSCALE:GREGORIAN",
+    "BEGIN:VEVENT","UID:wot-"+p.start+"-"+Math.random().toString(36).slice(2)+"@whatsontv",
+    "DTSTAMP:"+fmt(Date.now()),"DTSTART:"+fmt(p.start),"DTEND:"+fmt(end),
+    "SUMMARY:"+icsEsc(p.title),
+    "LOCATION:"+icsEsc((CH[p.ch] && CH[p.ch].name) || ""),
+    "DESCRIPTION:"+icsEsc(p.desc || ""),
+    "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(p.title),"TRIGGER:-PT10M","END:VALARM",
+    "END:VEVENT","END:VCALENDAR"
+  ].join("\r\n");
+  const blob = new Blob([ics], { type:"text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = (p.title || "program").replace(/[^\w֐-׿]+/g,"_").slice(0,40) + ".ics";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
 /* clicks: like buttons, top cards, program cards */
@@ -645,8 +754,10 @@ function openModal(p){
       <span class="hrt">${liked?"♥":"♡"}</span><span id="mLikeCnt">${agg.likes||0}</span> לייקים</button>`;
   }
   if(p.link) actHtml += `<a class="mlink" href="${esc(p.link)}" target="_blank" rel="noopener">לעמוד התוכנית ↗</a>`;
+  if(p.start) actHtml += `<button class="mics" id="mIcs">🔔 הזכר לי</button>`;
   acts.innerHTML = actHtml;
   if(SOCIAL) $("#mLike").onclick = () => toggleLike(p.key);
+  if(p.start) $("#mIcs").onclick = () => icsDownload(p);
 
   renderComments();
   $("#modal").classList.add("open");
@@ -684,12 +795,28 @@ $("#vtabs").querySelectorAll(".vtab").forEach(el => el.onclick = () => {
   $("#chips").classList.toggle("hidden", view !== "tv");   // צ'יפים רק בטלוויזיה
   outEl.scrollTo?.(0, 0); window.scrollTo(0, 0);
   if(allPrograms.length || sportPrograms.length) renderView();
+  if(view === "sport") fetchScores().then(() => { if(view === "sport") renderView(); });
 });
 
 $("#loadBtn").onclick = loadAll;
+
+// חיפוש — פתיחת שורת החיפוש וסינון חי
+$("#searchBtn").onclick = () => {
+  const open = $("#searchbar").classList.toggle("open");
+  $("#searchBtn").classList.toggle("active", open);
+  if(open){ $("#searchInput").focus(); }
+  else { searchQuery = ""; $("#searchInput").value = ""; renderView(); }
+};
+$("#searchInput").addEventListener("input", e => { searchQuery = e.target.value.trim(); renderView(); });
+$("#searchClear").onclick = () => { searchQuery = ""; $("#searchInput").value = ""; $("#searchInput").focus(); renderView(); };
+
 buildChips();
 loadAll();
-setInterval(() => { if(allPrograms.length || sportPrograms.length) renderView(); }, 60000);
+fetchScores();
+setInterval(async () => {
+  if(view === "sport") await fetchScores();
+  if(allPrograms.length || sportPrograms.length) renderView();
+}, 60000);
 
 /* ============================================================
    SOCIAL — Firebase (משתמשים אנונימיים, כינוי, לייקים, תגובות)

@@ -111,7 +111,8 @@
   .lthumb-wrap{position:relative;width:112px;min-width:112px;overflow:hidden;
     background:linear-gradient(135deg,var(--c,#2a2a2a),#161616);display:flex;align-items:center;justify-content:center}
   .lthumb-wrap .ph-label{font-size:11px;padding:6px;line-height:1.15;font-weight:800}
-  .lthumb-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+  .lthumb-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .35s ease}
+  .lthumb-wrap img.ld{opacity:1}
   .linfo{flex:1;min-width:0;padding:9px 12px;display:flex;flex-direction:column;gap:5px;justify-content:center}
   .lrow{display:flex;align-items:center;gap:8px}
   .ltime{font-size:12.5px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
@@ -131,7 +132,14 @@
   .ph-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;
     padding:12px;font-weight:900;font-size:clamp(14px,1.8vw,19px);color:rgba(255,255,255,.94);z-index:0;line-height:1.15;
     text-shadow:0 2px 12px rgba(0,0,0,.4)}
-  .pthumb{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;display:block}
+  .pthumb{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;display:block;
+    opacity:0;transition:opacity .35s ease}
+  .pthumb.ld{opacity:1}
+  .bkbtn{position:absolute;top:7px;left:7px;z-index:3;width:30px;height:30px;border-radius:50%;border:none;cursor:pointer;
+    background:rgba(0,0,0,.55);color:#ffd166;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;
+    transition:.15s;backdrop-filter:blur(2px)}
+  .bkbtn:hover{background:rgba(0,0,0,.8);transform:scale(1.1)}
+  .bkbtn.on{background:#ffd166;color:#3a2c00}
   .nowbadge{position:absolute;top:9px;right:9px;z-index:2;background:var(--red);color:#fff;font-weight:800;font-size:11px;
     letter-spacing:.3px;padding:3px 9px;border-radius:4px;display:flex;align-items:center;gap:5px}
   .nowbadge .d{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 1.6s infinite}
@@ -254,10 +262,21 @@
   .scard2 .tn:last-child{text-align:left}
   .scard2 .sc{font-weight:900;font-size:18px;font-variant-numeric:tabular-nums;white-space:nowrap;color:#fff;flex-shrink:0}
 
-  /* reminder (.ics) button */
+  /* reminder (.ics) / share / list buttons in modal */
   .mics{display:inline-flex;align-items:center;gap:7px;background:#262626;border:1px solid #3a3a3a;color:#fff;
     font-weight:800;font-size:15px;padding:9px 18px;border-radius:8px;cursor:pointer;transition:.15s}
   .mics:hover{background:#303030}
+  .mics.faved{background:rgba(255,209,102,.16);border-color:#ffd166;color:#ffd166}
+
+  /* skeleton loading */
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  .skel{background:linear-gradient(90deg,#1c1c1c 25%,#262626 50%,#1c1c1c 75%);background-size:200% 100%;
+    animation:shimmer 1.3s linear infinite;border-radius:6px}
+  .skel-frame{height:120px;border-radius:14px;margin-bottom:30px}
+  .skel-card .skel-thumb{aspect-ratio:16/9;border-radius:6px 6px 0 0}
+  .skel-card .skel-line{height:13px;margin:10px 13px 0;border-radius:4px}
+  .skel-card .skel-line.short{width:55%;margin-bottom:14px}
+  .skel-card{background:var(--card);border-radius:6px;overflow:hidden}
 
   footer{margin-top:20px;color:#777;font-size:12px;text-align:center;line-height:1.7;padding:0 18px 30px}
 </style>
@@ -355,6 +374,19 @@ const active = new Set(ORDER);
 let currentModal = null;        // {key,title,ch,img,desc,start,end,link}
 let view = "tv";                // "tv" (ערוצים רגילים) או "sport"
 let searchQuery = "", sportScores = [];
+// ⭐ הרשימה שלי — סדרות מועדפות (נשמר מקומית בדפדפן)
+const favSet = new Set(JSON.parse(localStorage.getItem("favKeys") || "[]"));
+function saveFavs(){ localStorage.setItem("favKeys", JSON.stringify([...favSet])); }
+function toggleFav(key){
+  if(favSet.has(key)) favSet.delete(key); else favSet.add(key);
+  saveFavs(); renderView();
+  if(currentModal && currentModal.key === key){
+    const b = $("#mFav");
+    if(b){ const on = favSet.has(key);
+      b.classList.toggle("faved", on);
+      b.textContent = on ? "★ ברשימה שלי" : "☆ הוסף לרשימה"; }
+  }
+}
 
 const $ = s => document.querySelector(s);
 const statusEl = $("#status"), outEl = $("#output"), updatedEl = $("#updated");
@@ -393,10 +425,17 @@ async function fetchData(path){
   return null;
 }
 
+// שלד טעינה — נראה כמו התוכן האמיתי בזמן שהנתונים בדרך
+function skeletonHtml(){
+  const card = `<div class="skel-card"><div class="skel skel-thumb"></div><div class="skel skel-line"></div><div class="skel skel-line short"></div></div>`;
+  return `<div class="skel skel-frame"></div><div class="grid">${card.repeat(8)}</div>`;
+}
+
 async function loadAll(){
   const btn = $("#loadBtn");
   btn.disabled = true; btn.classList.add("spin");
-  setStatus("טוען לוח שידורים…");
+  if(!allPrograms.length) outEl.innerHTML = skeletonHtml();
+  setStatus("");
   try {
     const loaded = await Promise.all(ORDER.map(id => fetchData(CH[id].file)));
     // ספורט — קובץ נפרד (כל ערוצי ספורט 5 / ONE)
@@ -415,13 +454,14 @@ async function loadAll(){
       if(u && (!oldest || u < oldest)) oldest = u;
     });
     if(!allPrograms.length){
+      outEl.innerHTML = "";
       setStatus("אין נתונים זמינים. ייתכן שה-GitHub Action עוד לא יצר את הקבצים.", true);
     } else {
       setStatus("");
       updatedEl.textContent = oldest ? "עודכן " + relativeTime(oldest) : "";
       renderView();
     }
-  } catch(e){ setStatus("שגיאה בטעינה: " + e.message, true); }
+  } catch(e){ if(!allPrograms.length) outEl.innerHTML = ""; setStatus("שגיאה בטעינה: " + e.message, true); }
   btn.disabled = false; btn.classList.remove("spin");
 }
 
@@ -444,7 +484,7 @@ function posterThumb(ch, img, title, badge, progress){
   const c = CH[ch] || { color:"#2a2a2a" };
   return `<div class="pthumb-wrap" style="--c:${c.color}">
     <span class="ph-label">${esc(title)}</span>
-    ${img ? `<img class="pthumb" src="${esc(img)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ""}
+    ${img ? `<img class="pthumb" src="${esc(img)}" alt="" loading="lazy" onload="this.classList.add('ld')" onerror="this.style.display='none'">` : ""}
     ${badge||""}${progress||""}
   </div>`;
 }
@@ -457,7 +497,7 @@ function liveCard(p, idx){
   return `<div class="lcard" data-idx="${idx}">
     <div class="lthumb-wrap" style="--c:${c.color}">
       <span class="ph-label">${esc(p.title)}</span>
-      ${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy" onerror="this.style.display='none'">` : ""}
+      ${p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy" onload="this.classList.add('ld')" onerror="this.style.display='none'">` : ""}
       <span class="lprog" style="width:${pct}%"></span>
     </div>
     <div class="linfo">
@@ -476,8 +516,10 @@ function pcard(p, idx){
     badge = `<span class="nowbadge"><span class="d"></span>עכשיו</span>`;
     progress = `<span class="pprogress" style="width:${pct}%"></span>`;
   }
+  const fav = favSet.has(p.key);
+  const bk = `<button class="bkbtn${fav?" on":""}" data-fav="${esc(p.key)}" title="הרשימה שלי">${fav?"★":"☆"}</button>`;
   return `<div class="pcard${isLive?" live":""}" data-idx="${idx}">
-    ${posterThumb(p.ch, p.img, p.title, badge, progress)}
+    ${posterThumb(p.ch, p.img, p.title, badge + bk, progress)}
     <div class="pinfo">
       <div class="prow">${chip(p.ch)}<span class="ptime">${prefix?`<span class="day">${prefix}</span>`:""}${hhmm}</span></div>
       <div class="ptitle">${esc(p.title)}</div>
@@ -592,6 +634,17 @@ function renderView(){
       <div class="live-strip">${live.map(i=>liveCard(windowed[i],i)).join("")}</div>
     </div>`;
   }
+  // ⭐ הרשימה שלי — השידור הקרוב של כל סדרה מועדפת
+  if(favSet.size){
+    const seen = new Set(), favIdx = [];
+    windowed.forEach((p, i) => {
+      if(favSet.has(p.key) && !seen.has(p.key)){ seen.add(p.key); favIdx.push(i); }
+    });
+    if(favIdx.length){
+      html += `<div class="section"><h2><span class="star">★</span>הרשימה שלי <span class="sub">· בקרוב אצלך</span></h2>
+        <div class="grid">${favIdx.map(i=>pcard(windowed[i],i)).join("")}</div></div>`;
+    }
+  }
   if(primeList.length){
     html += `<div class="section"><h2>🌙 מה יש היום בערב <span class="sub">· ${primePrefix.trim()} 21:40</span></h2>
       <div class="grid">${primeList.map((p,i)=>primeCard(p,i,primePrefix)).join("")}</div></div>`;
@@ -601,8 +654,18 @@ function renderView(){
       <div class="grid">${topList.slice(0,12).map(topCard).join("")}</div></div>`;
   }
   if(upcoming.length){
-    html += `<div class="section"><h2>בהמשך <span class="sub">· 24 השעות הקרובות</span></h2>
-      <div class="grid">${upcoming.map(i=>pcard(windowed[i],i)).join("")}</div></div>`;
+    // פיצול לפי יום — "בהמשך היום" ו"מחר"
+    const todayStr = new Date().toDateString();
+    const todayIdx = [], tomIdx = [];
+    upcoming.forEach(i => (new Date(windowed[i].start).toDateString() === todayStr ? todayIdx : tomIdx).push(i));
+    if(todayIdx.length){
+      html += `<div class="section"><h2>בהמשך היום</h2>
+        <div class="grid">${todayIdx.map(i=>pcard(windowed[i],i)).join("")}</div></div>`;
+    }
+    if(tomIdx.length){
+      html += `<div class="section"><h2>מחר <span class="sub">· עד השעה הזו</span></h2>
+        <div class="grid">${tomIdx.map(i=>pcard(windowed[i],i)).join("")}</div></div>`;
+    }
   }
   outEl.innerHTML = html;
 }
@@ -686,6 +749,18 @@ function scoreCard(g){
   </div>`;
 }
 
+// ===== שיתוף תוכנית (Web Share, עם נפילה להעתקה ללוח) =====
+async function shareProgram(p){
+  const c = CH[p.ch];
+  const when = p.start ? (() => { const { prefix, hhmm } = timeLabel(p.start); return ` · ${prefix}${hhmm}`; })() : "";
+  const text = `📺 ${p.title} · ${(c && c.name) || ""}${when}\n${location.origin + location.pathname}`;
+  try {
+    if(navigator.share){ await navigator.share({ title: p.title, text }); return; }
+    await navigator.clipboard.writeText(text);
+    setStatus("הפרטים הועתקו ללוח ✓"); setTimeout(() => setStatus(""), 2500);
+  } catch(e){ /* המשתמש ביטל — לא שגיאה */ }
+}
+
 // ===== תזכורת — הורדת אירוע יומן (.ics) עם התראה 10 דק' לפני =====
 function icsEsc(s){ return String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n"); }
 function icsDownload(p){
@@ -714,6 +789,8 @@ function icsDownload(p){
 outEl.addEventListener("click", e => {
   const likeEl = e.target.closest(".likebtn[data-like]");
   if(likeEl){ e.stopPropagation(); toggleLike(likeEl.dataset.like); return; }
+  const bk = e.target.closest(".bkbtn[data-fav]");
+  if(bk){ e.stopPropagation(); toggleFav(bk.dataset.fav); return; }
   const heroInfo = e.target.closest("[data-hero-info]");
   if(heroInfo){ const p = heroProgram;
     if(p) openModal({ key:p.key, title:p.title, ch:p.ch, img:p.img, desc:p.desc, start:p.start, end:p.end, link:p.link }); return; }
@@ -755,9 +832,14 @@ function openModal(p){
   }
   if(p.link) actHtml += `<a class="mlink" href="${esc(p.link)}" target="_blank" rel="noopener">לעמוד התוכנית ↗</a>`;
   if(p.start) actHtml += `<button class="mics" id="mIcs">🔔 הזכר לי</button>`;
+  const favOn = favSet.has(p.key);
+  actHtml += `<button class="mics${favOn?" faved":""}" id="mFav">${favOn?"★ ברשימה שלי":"☆ הוסף לרשימה"}</button>`;
+  actHtml += `<button class="mics" id="mShare">↗ שיתוף</button>`;
   acts.innerHTML = actHtml;
   if(SOCIAL) $("#mLike").onclick = () => toggleLike(p.key);
   if(p.start) $("#mIcs").onclick = () => icsDownload(p);
+  $("#mFav").onclick = () => toggleFav(p.key);
+  $("#mShare").onclick = () => shareProgram(p);
 
   renderComments();
   $("#modal").classList.add("open");
@@ -813,6 +895,11 @@ $("#searchClear").onclick = () => { searchQuery = ""; $("#searchInput").value = 
 buildChips();
 loadAll();
 fetchScores();
+
+// PWA — טעינה מהירה ועבודה אופליין (הנתונים האחרונים נשמרים במטמון)
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("./sw.js").catch(() => {});
+}
 setInterval(async () => {
   if(view === "sport") await fetchScores();
   if(allPrograms.length || sportPrograms.length) renderView();

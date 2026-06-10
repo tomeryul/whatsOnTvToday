@@ -27,13 +27,24 @@
   :root{ --bg:#141414; --card:#1c1c1c; --red:#e50914; --ink:#fff; --muted:#b3b3b3; --line:#2a2a2a; }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;touch-action:pan-x pan-y;-webkit-text-size-adjust:100%;text-size-adjust:100%}
-  body{background:var(--bg);color:var(--ink);font-family:"Heebo",system-ui,sans-serif;
-    min-height:100vh;line-height:1.4;-webkit-font-smoothing:antialiased}
+  html{scroll-behavior:smooth}
+  body{color:var(--ink);font-family:"Heebo",system-ui,sans-serif;
+    min-height:100vh;line-height:1.4;-webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1100px 460px at 88% -8%, rgba(229,9,20,.10), transparent 60%),
+      radial-gradient(900px 420px at -8% 4%, rgba(63,214,192,.06), transparent 55%),
+      var(--bg);
+    background-attachment:fixed}
+  ::-webkit-scrollbar{width:11px;height:11px}
+  ::-webkit-scrollbar-thumb{background:#333;border-radius:10px;border:3px solid var(--bg)}
+  ::-webkit-scrollbar-thumb:hover{background:#444}
   a{color:inherit;text-decoration:none}
   button{font-family:inherit}
 
   .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
-    padding:14px 4vw;padding-top:calc(14px + env(safe-area-inset-top,0px));background:#141414;border-bottom:1px solid var(--line)}
+    padding:14px 4vw;padding-top:calc(14px + env(safe-area-inset-top,0px));
+    background:rgba(18,18,18,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border-bottom:1px solid rgba(255,255,255,.07)}
   .brand{color:var(--red);font-weight:900;font-size:22px;letter-spacing:-1px;white-space:nowrap;
     height:34px;width:130px;display:flex;align-items:center;overflow:hidden;flex-shrink:0}
   .brand svg{display:block}
@@ -49,7 +60,12 @@
     font-weight:700;font-size:14px;user-select:none;border:1px solid var(--line);background:#1c1c1c;color:var(--muted);transition:.15s}
   .chip-toggle .swatch{width:10px;height:10px;border-radius:50%}
   .chip-toggle.on{color:#fff;background:#2a2a2a;border-color:#444}
-  .chip-toggle.off{opacity:.45}
+  .chip-toggle.on[data-ch="reshet13"]{background:rgba(229,9,20,.16);border-color:rgba(229,9,20,.55)}
+  .chip-toggle.on[data-ch="keshet12"]{background:rgba(63,214,192,.14);border-color:rgba(63,214,192,.5)}
+  .chip-toggle.on[data-ch="kan11"]{background:rgba(77,163,255,.16);border-color:rgba(77,163,255,.5)}
+  .chip-toggle{transition:background .15s,border-color .15s,opacity .15s,transform .12s}
+  .chip-toggle:active{transform:scale(.94)}
+  .chip-toggle.off{opacity:.4}
   .vtabs{display:flex;gap:4px;background:#1c1c1c;border:1px solid var(--line);border-radius:10px;padding:4px}
   .vtab{background:none;border:none;color:var(--muted);font-weight:800;font-size:14px;cursor:pointer;
     padding:7px 14px;border-radius:7px;transition:.15s}
@@ -79,8 +95,17 @@
   #status.err{color:#ff6b6b}
 
   #output{padding:8px 4vw 60px}
-  .section{margin:14px 0 28px}
-  .section > h2{font-size:clamp(18px,2.6vw,24px);font-weight:800;margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  .section{margin:18px 0 30px}
+  @keyframes sectionIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  #output.intro .section,#output.intro .live-frame{animation:sectionIn .5s cubic-bezier(.2,.7,.2,1) both}
+  #output.intro > :nth-child(2){animation-delay:.06s}
+  #output.intro > :nth-child(3){animation-delay:.12s}
+  #output.intro > :nth-child(4){animation-delay:.18s}
+  #output.intro > :nth-child(5){animation-delay:.24s}
+  .section > h2{font-size:clamp(18px,2.6vw,24px);font-weight:800;margin:0 0 15px;display:flex;align-items:center;gap:10px;
+    padding-inline-start:13px;position:relative}
+  .section > h2::before{content:"";position:absolute;inset-inline-start:0;top:50%;transform:translateY(-50%);
+    width:4px;height:1.05em;border-radius:3px;background:linear-gradient(var(--red),#7a060d)}
   .section > h2 .sub{color:var(--muted);font-weight:600;font-size:14px}
   .live-dot{width:11px;height:11px;border-radius:50%;background:var(--red);animation:pulse 1.6s infinite}
   .star{color:var(--accent,#ffd166)}
@@ -449,6 +474,8 @@ function setStatus(msg, isErr){
   statusEl.textContent = msg || "";
   statusEl.className = (msg ? "show " : "") + (isErr ? "err" : "");
 }
+let _introT;
+function introOnce(){ outEl.classList.add("intro"); clearTimeout(_introT); _introT = setTimeout(() => outEl.classList.remove("intro"), 1500); }
 function esc(s){ return String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 function seriesKey(title){ return String(title).trim().replace(/\s+/g," ").replace(/\//g," ").slice(0,300); }
 
@@ -512,6 +539,7 @@ async function loadAll(){
       setStatus("אין נתונים זמינים. ייתכן שה-GitHub Action עוד לא יצר את הקבצים.", true);
     } else {
       setStatus("");
+      introOnce();
       updatedEl.textContent = oldest ? "עודכן " + relativeTime(oldest) : "";
       // נתונים בני 6+ שעות — סימון אזהרה עדין (ייתכן שה-cron של GitHub דילג)
       updatedEl.classList.toggle("stale", !!oldest && Date.now() - oldest > 6 * 3600e3);
@@ -955,6 +983,7 @@ $("#vtabs").querySelectorAll(".vtab").forEach(el => el.onclick = () => {
   history.replaceState(null, "", view === "sport" ? "?tab=sport" : location.pathname); // קישור עמוק
   $("#chips").classList.toggle("hidden", view !== "tv");   // צ'יפים רק בטלוויזיה
   outEl.scrollTo?.(0, 0); window.scrollTo(0, 0);
+  introOnce();
   if(allPrograms.length || sportPrograms.length) renderView();
   if(view === "sport") fetchScores().then(() => { if(view === "sport") renderView(); });
 });

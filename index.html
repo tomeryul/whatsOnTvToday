@@ -27,8 +27,16 @@
 
   .topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
     padding:14px 4vw;padding-top:calc(14px + env(safe-area-inset-top,0px));background:#141414;border-bottom:1px solid var(--line)}
-  .brand{color:var(--red);font-weight:900;font-size:25px;letter-spacing:-1px;white-space:nowrap;
-    text-shadow:0 2px 12px rgba(229,9,20,.28)}
+  .brand{color:var(--red);font-weight:900;font-size:22px;letter-spacing:-1px;white-space:nowrap;
+    height:34px;width:130px;display:flex;align-items:center;overflow:hidden;flex-shrink:0}
+  .brand svg{display:block}
+
+  /* splash — אנימציית הלוגו בזמן טעינה ראשונית */
+  #splash{position:fixed;inset:0;z-index:200;background:#0f2040;display:flex;align-items:center;justify-content:center;
+    transition:opacity .55s ease;will-change:opacity}
+  #splash.hide{opacity:0;pointer-events:none}
+  #splashLogo{width:min(86vw,560px);aspect-ratio:1333 / 360}
+  #splashLogo svg{display:block}
   .chips{display:flex;gap:8px;flex-wrap:wrap}
   .chip-toggle{display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:20px;cursor:pointer;
     font-weight:700;font-size:14px;user-select:none;border:1px solid var(--line);background:#1c1c1c;color:var(--muted);transition:.15s}
@@ -282,8 +290,9 @@
 </style>
 </head>
 <body>
+  <div id="splash"><div id="splashLogo" aria-label="WhatsOnTV"></div></div>
   <div class="topbar">
-    <div class="brand">מה עכשיו</div>
+    <div class="brand" id="brand">WhatsOnTV</div>
     <div class="vtabs" id="vtabs">
       <button class="vtab active" data-view="tv">📺 טלוויזיה</button>
       <button class="vtab" data-view="sport">🏆 ספורט</button>
@@ -359,6 +368,30 @@ document.addEventListener("touchend", e => {
   if(now - _lastTouchEnd <= 300) e.preventDefault(); // חוסם double-tap zoom
   _lastTouchEnd = now;
 }, { passive:false });
+
+/* ============ לוגו Lottie — splash + מותג ============ */
+let _lottie;
+async function getLottie(){
+  if(_lottie !== undefined) return _lottie;
+  try { _lottie = (await import("https://cdn.jsdelivr.net/npm/lottie-web@5.12.2/+esm")).default; }
+  catch(e){ _lottie = null; }
+  return _lottie;
+}
+async function mountLogo(container, path, loop = true){
+  if(!container) return null;
+  const L = await getLottie();
+  if(!L) return null;
+  try { return L.loadAnimation({ container, renderer: "svg", loop, autoplay: true, path }); }
+  catch(e){ return null; }
+}
+const SPLASH_MIN = 1300, _splashStart = Date.now();
+let _splashGone = false;
+function hideSplash(){
+  if(_splashGone) return; _splashGone = true;
+  const s = document.getElementById("splash");
+  if(s){ s.classList.add("hide"); setTimeout(() => s.remove(), 650); }
+}
+function scheduleHideSplash(){ setTimeout(hideSplash, Math.max(0, SPLASH_MIN - (Date.now() - _splashStart))); }
 
 /* ============ schedule data + UI ============ */
 const CH = {
@@ -463,6 +496,7 @@ async function loadAll(){
     }
   } catch(e){ if(!allPrograms.length) outEl.innerHTML = ""; setStatus("שגיאה בטעינה: " + e.message, true); }
   btn.disabled = false; btn.classList.remove("spin");
+  scheduleHideSplash();
 }
 
 function chip(id){ const c = CH[id]; return `<span class="chip" style="background:${c.color};color:${c.text}">${esc(c.name)}</span>`; }
@@ -895,6 +929,16 @@ $("#searchClear").onclick = () => { searchQuery = ""; $("#searchInput").value = 
 buildChips();
 loadAll();
 fetchScores();
+
+// אנימציית הלוגו — מסך פתיחה (גרסה מלאה) + מותג בכותרת (גרסה שקופה)
+mountLogo(document.getElementById("splashLogo"), "assets/whatsontv-logo.json");
+mountLogo(document.getElementById("brand"), "assets/whatsontv-logo-mark.json").then(a => {
+  if(a) a.addEventListener("DOMLoaded", () => {
+    const b = document.getElementById("brand");
+    if(b) [...b.childNodes].forEach(n => { if(n.nodeType === 3) n.remove(); });
+  });
+});
+setTimeout(hideSplash, 4500); // בטיחות — שהספלאש לא ייתקע אם הטעינה נכשלת
 
 // PWA — טעינה מהירה ועבודה אופליין (הנתונים האחרונים נשמרים במטמון)
 if("serviceWorker" in navigator){

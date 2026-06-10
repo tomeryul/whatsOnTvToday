@@ -1,12 +1,14 @@
 // Service Worker — טעינה מהירה ועבודה אופליין.
 // אסטרטגיה: network-first עם נפילה למטמון — תמיד מנסים להביא טרי מהרשת,
 // וכשאין רשת מגישים את הגרסה האחרונה שנשמרה. כך אין סיכון לתוכן תקוע.
-const CACHE = "wot-v1";
+const CACHE = "wot-v2";
 const SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./firebase-config.js",
+  "./assets/whatsontv-logo.json",
+  "./assets/whatsontv-logo-mark.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/apple-touch-icon.png",

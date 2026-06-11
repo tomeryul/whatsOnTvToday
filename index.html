@@ -1221,6 +1221,7 @@ function renderComments(){
     return;
   }
   const key = currentModal.key;
+  const airId = currentModal.start ? key + "·" + currentModal.start : "";  // תגובות לפי שידור ספציפי
   box.innerHTML = `
     <h3>תגובות</h3>
     <div class="cbox">
@@ -1232,19 +1233,20 @@ function renderComments(){
     </div>
     <div class="clist" id="cList"><div class="cempty">טוען תגובות…</div></div>`;
   updateCAs();
-  $("#cSend").onclick = () => sendComment(key);
+  $("#cSend").onclick = () => sendComment(key, airId);
 
   if(unsubComments){ unsubComments(); unsubComments = null; }
   const { collection, query, orderBy, limit, onSnapshot } = FS;
-  const q = query(collection(db,"series",key,"comments"), orderBy("ts","desc"), limit(100));
+  const q = query(collection(db,"series",key,"comments"), orderBy("ts","desc"), limit(300));
   unsubComments = onSnapshot(q, snap => {
     const list = $("#cList"); if(!list) return;
-    if(snap.empty){ list.innerHTML = `<div class="cempty">אין עדיין תגובות — היה/י הראשון/ה!</div>`; return; }
-    const rows = [];
-    snap.forEach(d => {
+    // רק תגובות של אותו שידור (לפי השדה air); כך שתגובה על פרק לא מופיעה על האחרים
+    const docs = snap.docs.filter(d => (d.data().air || "") === airId);
+    if(!docs.length){ list.innerHTML = `<div class="cempty">אין עדיין תגובות — היה/י הראשון/ה!</div>`; return; }
+    const rows = docs.map(d => {
       const c = d.data();
       const t = c.ts && c.ts.toMillis ? relativeTime(c.ts.toMillis()) : "";
-      rows.push(`<div class="citem"><div class="ch"><span class="cn">${esc(c.nickname||"אנונימי")}</span><span class="ct">${t}</span></div><div class="cx">${esc(c.text||"")}</div></div>`);
+      return `<div class="citem"><div class="ch"><span class="cn">${esc(c.nickname||"אנונימי")}</span><span class="ct">${t}</span></div><div class="cx">${esc(c.text||"")}</div></div>`;
     });
     list.innerHTML = rows.join("");
   }, err => { const list = $("#cList"); if(list) list.innerHTML = `<div class="cempty">שגיאה בטעינת תגובות.</div>`; console.warn(err); });
@@ -1259,7 +1261,7 @@ function updateCAs(){
     as.querySelector("u")?.addEventListener("click", () => signInGoogle());
   }
 }
-async function sendComment(key){
+async function sendComment(key, airId){
   const ta = $("#cText"); const text = ta.value.trim();
   if(!text) return;
   if(!await ensureSignedIn()){ return; }
@@ -1272,7 +1274,7 @@ async function sendComment(key){
     const m = metaFor(key);
     const batch = writeBatch(db);
     const cref = doc(collection(db,"series",key,"comments"));
-    batch.set(cref, { nickname, uid, text, ts:serverTimestamp() });
+    batch.set(cref, { nickname, uid, text, air: airId || "", ts:serverTimestamp() });
     batch.set(doc(db,"series",key), { title:m.title, channel:m.channel, img:m.img,
       comments:increment(1), updated:serverTimestamp() }, { merge:true });
     await batch.commit();

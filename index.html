@@ -221,8 +221,9 @@
   .pcard .pinfo{padding:11px 13px 13px;min-width:0;flex:1;display:flex;flex-direction:column;gap:6px}
   .prow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .chip{font-size:12px;font-weight:800;padding:2px 9px;border-radius:4px;white-space:nowrap;line-height:1.6}
-  .ptime{font-variant-numeric:tabular-nums;font-weight:800;font-size:14px;color:#fff}
+  .ptime{font-variant-numeric:tabular-nums;font-weight:800;font-size:13.5px;color:#fff;letter-spacing:-.2px}
   .ptime .day{color:var(--muted);font-weight:600;font-size:12px}
+  .pdate{color:var(--muted);font-weight:600;font-size:11.5px;margin-top:-1px}
   .ptitle{font-size:15.5px;font-weight:700;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .pdesc{font-size:12.5px;color:var(--muted);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
   .pmeta{display:flex;align-items:center;gap:14px;margin-top:auto;padding-top:2px}
@@ -245,9 +246,9 @@
     backdrop-filter:blur(14px) saturate(1.3);-webkit-backdrop-filter:blur(14px) saturate(1.3)}
   .srow{display:flex;align-items:center;gap:13px;padding:11px 16px;background:rgba(20,20,22,.55);transition:background .15s}
   .srow:hover{background:rgba(255,255,255,.07)}
-  .stime{font-variant-numeric:tabular-nums;font-weight:800;font-size:15px;color:#fff;min-width:62px;flex-shrink:0;
-    display:flex;align-items:baseline;gap:5px}
-  .stime .day{color:var(--muted);font-weight:600;font-size:11.5px}
+  .stime{font-variant-numeric:tabular-nums;font-weight:800;font-size:15px;color:#fff;min-width:74px;flex-shrink:0;
+    display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1.15}
+  .stime .day{color:var(--muted);font-weight:600;font-size:10.5px}
   .schip{position:relative;flex-shrink:0;width:104px;height:34px;display:flex;align-items:center;justify-content:center;
     background:#0e2017;border:1px solid #1f5638;border-radius:7px;overflow:hidden}
   .schip .sname{padding:5px 9px;font-size:11.5px;font-weight:800;color:#74e0a6;text-align:center;line-height:1.1;
@@ -584,6 +585,20 @@ function timeLabel(start){
   const hhmm = new Intl.DateTimeFormat("he-IL",{hour:"2-digit",minute:"2-digit",hour12:false}).format(d);
   return { prefix: diff <= 0 ? "" : diff === 1 ? "מחר " : "", hhmm };
 }
+const HEB_DOW = ["יום א׳","יום ב׳","יום ג׳","יום ד׳","יום ה׳","יום ו׳","שבת"];
+// "היום · 11.06" / "מחר · 12.06" / "יום ה׳ · 13.06"
+function dayDate(start){
+  const d = new Date(start), now = new Date();
+  const day0 = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diff = Math.round((dDay - day0) / 86400e3);
+  const dd = String(d.getDate()).padStart(2,"0"), mm = String(d.getMonth()+1).padStart(2,"0");
+  const word = diff === 0 ? "היום" : diff === 1 ? "מחר" : diff === -1 ? "אתמול" : HEB_DOW[d.getDay()];
+  return `${word} · ${dd}.${mm}`;
+}
+const _hm = t => new Intl.DateTimeFormat("he-IL",{hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(t));
+// טווח שעות "HH:MM–HH:MM" (או רק התחלה אם אין סיום)
+function timeRange(start, end){ return (end && end > start) ? `${_hm(start)}–${_hm(end)}` : _hm(start); }
 
 // טעינת JSON: קודם מהקובץ המקומי (GitHub Pages), ואם חסום (למשל בתצוגה מקדימה
 // בארגז חול) — נפילה חזרה לכתובת המתפרסמת, כדי שתמיד יוצגו נתונים אמיתיים.
@@ -674,7 +689,7 @@ function liveCard(p, idx){
       <span class="lprog" style="width:${pct}%"></span>
     </div>
     <div class="linfo">
-      <div class="lrow">${chip(p.ch)}<span class="ltime">${hhmm}</span><span class="lleft">נשאר ${Math.max(1, Math.round((p.end - Date.now())/60000))} ד׳</span></div>
+      <div class="lrow">${chip(p.ch)}<span class="ltime">${timeRange(p.start, p.end)}</span><span class="lleft">נשאר ${Math.max(1, Math.round((p.end - Date.now())/60000))} ד׳</span></div>
       <div class="ltitle">${esc(p.title)}</div>
     </div>
   </div>`;
@@ -696,7 +711,8 @@ function pcard(p, idx){
   return `<div class="pcard${isLive?" live":""}" data-idx="${idx}">
     ${posterThumb(p.ch, p.img, p.title, badge + bk, progress)}
     <div class="pinfo">
-      <div class="prow">${chip(p.ch)}<span class="ptime">${prefix?`<span class="day">${prefix}</span>`:""}${hhmm}</span>${soon}</div>
+      <div class="prow">${chip(p.ch)}<span class="ptime">${timeRange(p.start, p.end)}</span>${soon}</div>
+      <div class="pdate">${esc(dayDate(p.start))}</div>
       <div class="ptitle">${esc(p.title)}</div>
       ${p.desc?`<div class="pdesc">${esc(p.desc)}</div>`:""}
       ${likeMetaHtml(p.key)}
@@ -727,7 +743,8 @@ function primeCard(p, idx, prefix){
   return `<div class="pcard" data-prime="${idx}">
     ${posterThumb(p.ch, p.img, p.title, "", "")}
     <div class="pinfo">
-      <div class="prow">${chip(p.ch)}<span class="ptime"><span class="day">${prefix}</span>21:40</span></div>
+      <div class="prow">${chip(p.ch)}<span class="ptime">${timeRange(p.start, p.end)}</span></div>
+      <div class="pdate">${esc(dayDate(p.start))}</div>
       <div class="ptitle">${esc(p.title)}</div>
       ${p.desc ? `<div class="pdesc">${esc(p.desc)}</div>` : ""}
       ${likeMetaHtml(p.key)}
@@ -745,7 +762,7 @@ function sportRow(p){
     p.img ? `<img src="${esc(p.img)}" alt="${esc(p.channel)}" loading="lazy" onload="this.classList.add('ld')">` : ""
   }</span>`;
   return `<div class="srow">
-    <span class="stime">${prefix?`<span class="day">${prefix.trim()}</span>`:""}${hhmm}</span>
+    <span class="stime">${hhmm}<span class="day">${esc(dayDate(p.start))}</span></span>
     ${logo}
     <span class="stitle">${esc(p.title)}</span>
     ${tag}
@@ -991,9 +1008,7 @@ function openModal(p){
   chipEl.textContent = c.name; chipEl.style.background = c.color; chipEl.style.color = c.text;
   $("#modalTitle").textContent = p.title;
   if(p.start){
-    const { prefix, hhmm } = timeLabel(p.start);
-    const endTxt = new Intl.DateTimeFormat("he-IL",{hour:"2-digit",minute:"2-digit",hour12:false}).format(new Date(p.end));
-    $("#modalMeta").innerHTML = `<b>${prefix}${hhmm}–${endTxt}</b> · ${esc(c.name)}`;
+    $("#modalMeta").innerHTML = `<b>${esc(timeRange(p.start, p.end))}</b> · ${esc(dayDate(p.start))} · ${esc(c.name)}`;
   } else { $("#modalMeta").innerHTML = esc(c.name); }
   $("#modalDesc").textContent = p.desc || "אין תיאור זמין לתוכנית זו.";
 

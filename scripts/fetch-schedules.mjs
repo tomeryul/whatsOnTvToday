@@ -15,17 +15,43 @@ const DATA_DIR = join(ROOT, "data");
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 const TZ = "Asia/Jerusalem";
 
-async function getText(url, extraHeaders = {}) {
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": UA,
-      "Accept": "text/html,application/xhtml+xml,application/json,*/*;q=0.8",
-      "Accept-Language": "he-IL,he;q=0.9,en;q=0.8",
-      ...extraHeaders
-    }
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-  return res.text();
+// כותרות בסיס — מתאימות גם ל-XHR (mako/כאן/ספורט). אין להוסיף כאן Sec-Fetch של ניווט,
+// כי זה סותר בקשות XHR וגורם ל-403 בכאן 11.
+const BROWSER_HEADERS = {
+  "User-Agent": UA,
+  "Accept": "text/html,application/xhtml+xml,application/json,*/*;q=0.8",
+  "Accept-Language": "he-IL,he;q=0.9,en;q=0.8"
+};
+
+// כותרות של ניווט דפדפן מלא — רק ל-13tv, שבודק כמה "דפדפנית" נראית הבקשה.
+const DOC_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "Accept-Language": "he-IL,he;q=0.9,en-US;q=0.8,en;q=0.7",
+  "sec-ch-ua": '"Chromium";v="131", "Not_A Brand";v="24"',
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": '"macOS"',
+  "Sec-Fetch-Dest": "document",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-Site": "none",
+  "Sec-Fetch-User": "?1",
+  "Upgrade-Insecure-Requests": "1"
+};
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+async function getText(url, extraHeaders = {}, tries = 3) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    if (i) await sleep(1500 * i); // השהיה גדלה בין ניסיונות
+    try {
+      const res = await fetch(url, { headers: { ...BROWSER_HEADERS, ...extraHeaders } });
+      if (res.ok) return res.text();
+      lastErr = new Error(`HTTP ${res.status} for ${url}`);
+      if (res.status >= 400 && res.status < 500 && res.status !== 403 && res.status !== 429) break; // 4xx אחר — אין טעם לנסות שוב
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr;
 }
 
 function decodeEntities(s) {
@@ -64,7 +90,7 @@ const item = (start, title, link, img, desc) => ({ start, time: israelHHMM(start
 
 /* ============ רשת 13 ============ */
 async function fetchReshet() {
-  const html = await getText("https://13tv.co.il/tv-guide/");
+  const html = await getText("https://13tv.co.il/tv-guide/", DOC_HEADERS);
   const m = html.match(/<script id="__NEXT_DATA__" type="application\/json">([\s\S]*?)<\/script>/);
   if (!m) throw new Error("Reshet: __NEXT_DATA__ not found");
   const data = JSON.parse(m[1]);
@@ -249,6 +275,8 @@ async function build(id, name, fetcher) {
     return true;
   } catch (e) {
     console.error(`✗ ${id}: ${e.message}`);
+    // אנוטציה גלויה בממשק של GitHub Actions — כדי שכשל בערוץ לא יישאר שקט
+    console.log(`::warning title=${id} fetch failed::${e.message}`);
     return false;
   }
 }
@@ -263,4 +291,10 @@ const results = await Promise.all([
 if (!results.some(Boolean)) {
   console.error("All channels failed");
   process.exit(1);
+}
+
+// 13tv חוסם כתובות של דאטה-סנטר (Akamai), ולכן הערוץ הזה עשוי להיכשל כאן באופן קבוע.
+// זה לא שובר את האפליקציה: הדפדפן של המשתמש מושך את רשת 13 ישירות כגיבוי (CORS פתוח).
+if (!results[0]) {
+  console.log("ℹ 13tv blocks datacenter IPs — the browser falls back to fetching Reshet 13 live.");
 }
